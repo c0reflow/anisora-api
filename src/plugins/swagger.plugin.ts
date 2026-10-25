@@ -23,6 +23,8 @@ export async function registerSwagger(app: FastifyInstance) {
       ],
       tags: [
         { name: 'Anime', description: 'Anime search, listing, details, and cross-provider resolution' },
+        { name: 'Comments', description: 'Episode comments, replies, and discussion threads' },
+        { name: 'Users', description: 'User account management and profiles' },
         { name: 'Metadata', description: 'Tags, studios, producers, and database breakdown statistics' },
         { name: 'Health', description: 'API health and database connectivity diagnostics' },
       ],

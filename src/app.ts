@@ -5,6 +5,8 @@ import { registerSwagger } from './plugins/swagger.plugin';
 import { healthRoutes } from './routes/health.routes';
 import { animeRoutes } from './routes/anime.routes';
 import { metaRoutes } from './routes/meta.routes';
+import { commentRoutes } from './routes/comment.routes';
+import { userRoutes } from './routes/user.routes';
 import { config } from './config/env';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -47,6 +49,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(
     async (v1) => {
       await v1.register(animeRoutes, { prefix: '/anime' });
+      await v1.register(commentRoutes, { prefix: '/comments' });
+      await v1.register(userRoutes, { prefix: '/users' });
       await v1.register(metaRoutes, { prefix: '/meta' });
     },
     { prefix: config.apiPrefix }

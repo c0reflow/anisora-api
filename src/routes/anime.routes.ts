@@ -161,4 +161,64 @@ export const animeRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send(anime.relations);
     }
   );
+
+  /**
+   * POST /api/v1/anime/:id/view - Increment anime views counter
+   */
+  app.post(
+    '/:id/view',
+    {
+      schema: {
+        tags: ['Anime'],
+        summary: 'Increment anime views count',
+        description: 'Records a new view for the specified anime title.',
+        params: AnimeIdParamSchema,
+        response: {
+          200: Type.Object({ views: Type.Integer({ description: 'Updated views count' }) }),
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      const res = await animeService.incrementViews(req.params.id);
+      if (!res) {
+        return reply.status(404).send({
+          statusCode: 404,
+          error: 'Not Found',
+          message: `Anime with ID '${req.params.id}' was not found.`,
+        });
+      }
+      return reply.send(res);
+    }
+  );
+
+  /**
+   * POST /api/v1/anime/:id/like - Increment anime likes counter
+   */
+  app.post(
+    '/:id/like',
+    {
+      schema: {
+        tags: ['Anime'],
+        summary: 'Increment anime likes count',
+        description: 'Records a like for the specified anime title.',
+        params: AnimeIdParamSchema,
+        response: {
+          200: Type.Object({ likes: Type.Integer({ description: 'Updated likes count' }) }),
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    async (req, reply) => {
+      const res = await animeService.updateLikes(req.params.id, 1);
+      if (!res) {
+        return reply.status(404).send({
+          statusCode: 404,
+          error: 'Not Found',
+          message: `Anime with ID '${req.params.id}' was not found.`,
+        });
+      }
+      return reply.send(res);
+    }
+  );
 };

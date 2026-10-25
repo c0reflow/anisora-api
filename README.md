@@ -123,6 +123,8 @@ Open your browser and navigate to:
 | `GET` | `/api/v1/anime/by-provider/:provider/:providerId` | Lookup anime by external provider ID |
 | `GET` | `/api/v1/anime/:id` | Full details for an anime by its `anisora_id` |
 | `GET` | `/api/v1/anime/:id/relations` | Direct prequels, sequels, and related anime |
+| `POST` | `/api/v1/anime/:id/view` | Increment anime view count |
+| `POST` | `/api/v1/anime/:id/like` | Increment anime like count |
 
 #### Query Parameters for `GET /api/v1/anime`:
 - `q`: Search keyword matching title or synonyms (case-insensitive)
@@ -134,26 +136,30 @@ Open your browser and navigate to:
 - `studio`: Filter by animation studio (e.g. `mappa`, `kyoto animation`, `bones`)
 - `producer`: Filter by producer
 - `min_score` / `max_score`: Filter by mean rating score (e.g. `min_score=7.5`)
-- `sort_by`: Sort field (`score_mean`, `score_agm`, `season_year`, `title`, `episodes`)
+- `sort_by`: Sort field (`score_mean`, `score_agm`, `season_year`, `title`, `episodes`, `views`, `likes`)
 - `sort_order`: `desc` or `asc` (default: `desc`)
 - `page`: Page number (default: `1`)
 - `limit`: Records per page (default: `20`, max: `100`)
 
-#### Supported External Providers:
-- `mal` (MyAnimeList)
-- `anilist` (AniList)
-- `kitsu` (Kitsu)
-- `hianime` (HiAnime)
-- `miruro` (Miruro)
-- `animeplanet` (AnimePlanet)
-- `anidb` (AniDB)
-- `anisearch` (AniSearch)
-- `simkl` (Simkl)
-- `livechart` (LiveChart)
-- `animecountdown` (AnimeCountdown)
-- `ann` (AnimeNewsNetwork)
+### 3. Episode Comments Endpoints (`/api/v1/comments`)
 
-### 3. Metadata Endpoints (`/api/v1/meta`)
+Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `199918116&ep=1`), supporting both top-level parent discussions and threaded replies.
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/comments/:episodeId` | Fetch all comments for an episode (supports pagination and `type=parent\|reply`) |
+| `POST` | `/api/v1/comments` | Post a new comment or reply (with `parent_comment_id`) |
+| `DELETE` | `/api/v1/comments/:id` | Delete a comment (cascades to all child replies) |
+
+### 4. User Accounts (`/api/v1/users`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/users` | Register a new user account |
+| `GET` | `/api/v1/users/:id` | Get public profile by User UUID |
+| `GET` | `/api/v1/users` | Paginated list of users |
+
+### 5. Metadata Endpoints (`/api/v1/meta`)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |

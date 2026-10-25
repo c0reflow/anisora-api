@@ -110,7 +110,90 @@ async function runTests() {
     throw new Error('OpenAPI docs failed');
   }
 
-  console.log('\n=== ALL 9 API INTEGRATION TESTS PASSED SUCCESSFULLY! ===\n');
+  // Test 10: Increment Anime Views & Likes
+  console.log(`\n[Test 10] Testing POST /api/v1/anime/${testId}/view and /like`);
+  const viewRes = await app.inject({ method: 'POST', url: `/api/v1/anime/${testId}/view` });
+  console.log('View Status:', viewRes.statusCode, JSON.parse(viewRes.body));
+  const likeRes = await app.inject({ method: 'POST', url: `/api/v1/anime/${testId}/like` });
+  console.log('Like Status:', likeRes.statusCode, JSON.parse(likeRes.body));
+  if (viewRes.statusCode !== 200 || likeRes.statusCode !== 200) {
+    throw new Error('View or Like increment failed');
+  }
+
+  // Test 11: Create User
+  console.log('\n[Test 11] Testing POST /api/v1/users (User Registration)');
+  const randomEmail = `otaku_${Date.now()}@example.com`;
+  const userRes = await app.inject({
+    method: 'POST',
+    url: '/api/v1/users',
+    payload: {
+      email: randomEmail,
+      password: 'SuperSecretPassword123!',
+      username: `otaku_${Date.now().toString().slice(-4)}`,
+    },
+  });
+  console.log('User Status:', userRes.statusCode);
+  const userBody = JSON.parse(userRes.body);
+  console.log('Created User ID:', userBody.id, 'Email:', userBody.email);
+  if (userRes.statusCode !== 201 || !userBody.id) {
+    throw new Error('User creation failed');
+  }
+
+  // Test 12: Episode Comments with episode_id = animeid&ep=(int)
+  const testEpisodeId = `${testId}&ep=1`;
+  console.log(`\n[Test 12] Testing Comments for episode: ${testEpisodeId}`);
+  
+  // 12a: Post parent comment
+  const commentRes1 = await app.inject({
+    method: 'POST',
+    url: '/api/v1/comments',
+    payload: {
+      episode_id: testEpisodeId,
+      user_id: userBody.id,
+      comment: 'Episode 1 animation was incredible!',
+      type: 'parent',
+    },
+  });
+  console.log('Parent Comment Status:', commentRes1.statusCode);
+  const comment1 = JSON.parse(commentRes1.body);
+  console.log('Created Parent Comment ID:', comment1.id);
+  if (commentRes1.statusCode !== 201) throw new Error('Parent comment failed');
+
+  // 12b: Post reply to parent comment
+  const commentRes2 = await app.inject({
+    method: 'POST',
+    url: '/api/v1/comments',
+    payload: {
+      episode_id: testEpisodeId,
+      user_id: userBody.id,
+      comment: 'Agreed, the soundtrack was fire too!',
+      type: 'reply',
+      parent_comment_id: comment1.id,
+    },
+  });
+  console.log('Reply Comment Status:', commentRes2.statusCode);
+  const comment2 = JSON.parse(commentRes2.body);
+  console.log('Created Reply Comment ID:', comment2.id);
+  if (commentRes2.statusCode !== 201) throw new Error('Reply comment failed');
+
+  // 12c: Fetch comments for this episode
+  const fetchCommentsRes = await app.inject({
+    method: 'GET',
+    url: `/api/v1/comments/${encodeURIComponent(testEpisodeId)}`,
+  });
+  console.log('Fetch Comments Status:', fetchCommentsRes.statusCode);
+  const commentsList = JSON.parse(fetchCommentsRes.body);
+  console.log('Found comments for episode:', commentsList.pagination.total);
+  if (fetchCommentsRes.statusCode !== 200 || commentsList.pagination.total < 2) {
+    throw new Error('Fetch comments failed');
+  }
+
+  // 12d: Delete created comments (cleanup)
+  await app.inject({ method: 'DELETE', url: `/api/v1/comments/${comment2.id}` });
+  await app.inject({ method: 'DELETE', url: `/api/v1/comments/${comment1.id}` });
+  console.log('Cleaned up test comments successfully.');
+
+  console.log('\n=== ALL 12 API INTEGRATION TESTS PASSED SUCCESSFULLY! ===\n');
 
   await app.close();
   await prisma.$disconnect();

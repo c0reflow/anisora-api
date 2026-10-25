@@ -18,6 +18,8 @@ export function formatAnimeItem(item: any): AnimeItemType {
     score_agm: item.score_agm != null ? Number(item.score_agm) : null,
     score_mean: item.score_mean != null ? Number(item.score_mean) : null,
     score_median: item.score_median != null ? Number(item.score_median) : null,
+    views: item.views != null ? Number(item.views) : 0,
+    likes: item.likes != null ? Number(item.likes) : 0,
     sources: Array.isArray(item.sources)
       ? item.sources
       : typeof item.sources === 'string'
@@ -341,6 +343,40 @@ export class AnimeService {
     if (!item) return null;
 
     return this.getAnimeById(item.anisora_id.toString());
+  }
+
+  /**
+   * Increment view count for an anime
+   */
+  async incrementViews(idString: string): Promise<{ views: number } | null> {
+    try {
+      const id = BigInt(idString);
+      const updated = await prisma.anime.update({
+        where: { anisora_id: id },
+        data: { views: { increment: 1 } },
+        select: { views: true },
+      });
+      return { views: Number(updated.views) };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Increment or decrement likes count for an anime
+   */
+  async updateLikes(idString: string, change: 1 | -1 = 1): Promise<{ likes: number } | null> {
+    try {
+      const id = BigInt(idString);
+      const updated = await prisma.anime.update({
+        where: { anisora_id: id },
+        data: { likes: { increment: change } },
+        select: { likes: true },
+      });
+      return { likes: Number(updated.likes) };
+    } catch {
+      return null;
+    }
   }
 }
 

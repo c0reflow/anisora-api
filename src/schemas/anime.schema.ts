@@ -32,6 +32,8 @@ export const AnimeItemSchema = Type.Object(
     score_agm: Type.Union([Type.Number(), Type.Null()]),
     score_mean: Type.Union([Type.Number(), Type.Null()]),
     score_median: Type.Union([Type.Number(), Type.Null()]),
+    views: Type.Integer({ description: 'Total anime view count', default: 0 }),
+    likes: Type.Integer({ description: 'Total anime like count', default: 0 }),
     sources: Type.Array(Type.String(), { description: 'External database URLs' }),
     external_ids: ExternalIdsSchema,
     tags: Type.Optional(Type.Array(Type.String())),
@@ -90,6 +92,8 @@ export const AnimeListQuerySchema = Type.Intersect([
         Type.Literal('season_year'),
         Type.Literal('title'),
         Type.Literal('episodes'),
+        Type.Literal('views'),
+        Type.Literal('likes'),
         Type.Literal('anisora_id'),
       ], { default: 'score_mean', description: 'Attribute to sort by' })
     ),

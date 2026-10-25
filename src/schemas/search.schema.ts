@@ -32,7 +32,7 @@ export const AnimeSearchResultItemSchema = Type.Object(
       example: 'action',
     }),
   },
-  { $id: 'AnimeSearchResultItem', description: 'Clean formatted anime search result' }
+  { description: 'Clean formatted anime search result' }
 );
 
 export type AnimeSearchResultItemType = Static<typeof AnimeSearchResultItemSchema>;

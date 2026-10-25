@@ -71,8 +71,7 @@ async function migrate() {
     `CREATE INDEX IF NOT EXISTS idx_captcha_tokens_expiry ON captcha_tokens(expires_at);`,
 
     // 5. Episode comments table (using episode_id = animeid&ep=(int))
-    `DROP TABLE IF EXISTS anime_comments CASCADE;`,
-    `CREATE TABLE anime_comments (
+    `CREATE TABLE IF NOT EXISTS anime_comments (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         episode_id VARCHAR(100) NOT NULL,
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -83,9 +82,16 @@ async function migrate() {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );`,
 
-    `CREATE INDEX idx_anime_comments_episode_id ON anime_comments(episode_id);`,
-    `CREATE INDEX idx_anime_comments_user_id ON anime_comments(user_id);`,
-    `CREATE INDEX idx_anime_comments_parent_id ON anime_comments(parent_comment_id);`,
+    `CREATE INDEX IF NOT EXISTS idx_anime_comments_episode_id ON anime_comments(episode_id);`,
+    `CREATE INDEX IF NOT EXISTS idx_anime_comments_user_id ON anime_comments(user_id);`,
+    `CREATE INDEX IF NOT EXISTS idx_anime_comments_parent_id ON anime_comments(parent_comment_id);`,
+
+    // 6. Home page cache table
+    `CREATE TABLE IF NOT EXISTS home (
+        id VARCHAR(50) PRIMARY KEY DEFAULT 'current',
+        data JSONB NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );`,
   ];
 
   for (const sql of statements) {

@@ -22,6 +22,7 @@ export async function registerSwagger(app: FastifyInstance) {
         },
       ],
       tags: [
+        { name: 'Home', description: 'Curated daily home page and spotlight data with admin AniList sync' },
         { name: 'Search', description: 'Optimized anime search by name and quick top-5 autocomplete suggestions' },
         { name: 'Catalog', description: 'Discovery catalogs: Trending, Top Airing, Most Popular, Schedule, A-Z, Genres, Formats, and Episodes' },
         { name: 'Anime', description: 'Anime search, listing, details, and cross-provider resolution' },

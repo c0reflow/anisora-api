@@ -28,7 +28,7 @@ export const LatestEpisodeItemSchema = Type.Object(
     tag: Type.Union([Type.String(), Type.Null()]),
     airing_at: Type.Union([Type.String({ format: 'date-time' }), Type.Null()]),
   },
-  { $id: 'LatestEpisodeItem', description: 'Recently aired anime episode' }
+  { description: 'Recently aired anime episode' }
 );
 
 export type LatestEpisodeItemType = Static<typeof LatestEpisodeItemSchema>;

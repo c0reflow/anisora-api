@@ -363,7 +363,95 @@ async function runTests() {
     throw new Error('Get episodes by ID failed');
   }
 
-  console.log('\n=== ALL 24 API INTEGRATION TESTS PASSED SUCCESSFULLY! ===\n');
+  // Test 25: All-in-One Curated /home endpoint
+  console.log('\n[Test 25] Testing GET /home (Curated Daily Home Data)');
+  const homeRes = await app.inject({ method: 'GET', url: '/home' });
+  console.log('Home Status:', homeRes.statusCode);
+  const homeBody = JSON.parse(homeRes.body);
+  console.log('Home Sections verified:', {
+    spotlight_count: homeBody.spotlight?.length,
+    trending_count: homeBody.trending?.length,
+    top_airing_count: homeBody.top_airing?.length,
+    most_popular_count: homeBody.most_popular?.length,
+    most_favorite_count: homeBody.most_favorite?.length,
+    latest_completed_count: homeBody.latest_completed?.length,
+    genres_count: homeBody.genres?.length,
+    latest_episodes_count: homeBody.latest_episodes?.length,
+    new_on_anisora_count: homeBody.new_on_anisora?.length,
+    schedule_count: homeBody.estimated_schedule?.length,
+    top_10_count: homeBody.top_10?.data?.length,
+    top_upcoming_count: homeBody.top_upcoming?.length,
+    latest_comments_count: homeBody.latest_comments?.length,
+    updated_at: homeBody.updated_at,
+  });
+
+  const spotlightSample = homeBody.spotlight?.[0];
+  console.log('Spotlight Sample #1:', {
+    rank: spotlightSample?.rank,
+    badge: spotlightSample?.spotlight_badge,
+    title: spotlightSample?.title,
+    banner: spotlightSample?.banner ? `${spotlightSample.banner.slice(0, 45)}...` : null,
+    type: spotlightSample?.type,
+    release_date: spotlightSample?.release_date,
+    quality: spotlightSample?.quality,
+    episodes: spotlightSample?.episodes,
+  });
+
+  if (
+    homeRes.statusCode !== 200 ||
+    !homeBody.spotlight ||
+    homeBody.spotlight.length === 0 ||
+    !spotlightSample.banner ||
+    !homeBody.trending ||
+    !homeBody.top_airing ||
+    !homeBody.top_10 ||
+    !homeBody.latest_episodes
+  ) {
+    throw new Error('Home data structure validation failed');
+  }
+
+  // Test 26: Admin Sync Security - Unauthorized without Bearer token
+  console.log('\n[Test 26] Testing GET /home?update=true without admin token');
+  const unauthorizedRes = await app.inject({
+    method: 'GET',
+    url: '/home?update=true',
+  });
+  console.log('Unauthorized Status:', unauthorizedRes.statusCode);
+  if (unauthorizedRes.statusCode !== 401) {
+    throw new Error('Expected 401 Unauthorized for /home?update=true without admin key');
+  }
+
+  // Test 27: Admin Sync with Bearer Admin Key
+  console.log('\n[Test 27] Testing GET /home?update=true WITH Bearer admin key');
+  const syncRes = await app.inject({
+    method: 'GET',
+    url: '/home?update=true',
+    headers: {
+      Authorization: 'Bearer anisora_admin_secret_key_2026',
+    },
+  });
+  console.log('Sync Status:', syncRes.statusCode);
+  const syncBody = JSON.parse(syncRes.body);
+  console.log('Synced Spotlight count:', syncBody.spotlight?.length, 'Updated at:', syncBody.updated_at);
+  if (syncRes.statusCode !== 200 || !syncBody.spotlight) {
+    throw new Error('Admin home sync failed');
+  }
+
+  // Test 28: Direct Alias /home&update with Bearer Admin Key
+  console.log('\n[Test 28] Testing GET /home&update WITH Bearer admin key');
+  const aliasSyncRes = await app.inject({
+    method: 'GET',
+    url: '/home&update',
+    headers: {
+      Authorization: 'Bearer anisora_admin_secret_key_2026',
+    },
+  });
+  console.log('Alias Sync Status:', aliasSyncRes.statusCode);
+  if (aliasSyncRes.statusCode !== 200) {
+    throw new Error('GET /home&update alias failed');
+  }
+
+  console.log('\n=== ALL 28 API INTEGRATION TESTS PASSED SUCCESSFULLY! ===\n');
 
   await app.close();
   await prisma.$disconnect();

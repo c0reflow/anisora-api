@@ -10,6 +10,7 @@ import { commentRoutes } from './routes/comment.routes';
 import { userRoutes } from './routes/user.routes';
 import { searchRoutes, searchSuggestionRoutes } from './routes/search.routes';
 import { catalogRoutes } from './routes/catalog.routes';
+import { homeRoutes } from './routes/home.routes';
 import { config } from './config/env';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -51,7 +52,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Health route
   await app.register(healthRoutes);
 
-  // Top-level direct shortcuts (/trending, /top-airing, /movie, /search, etc.)
+  // Top-level direct shortcuts (/home, /trending, /top-airing, /movie, /search, etc.)
+  await app.register(homeRoutes);
   await app.register(catalogRoutes);
   await app.register(searchRoutes, { prefix: '/search' });
   await app.register(searchSuggestionRoutes, { prefix: '/searchsuggestion' });
@@ -59,6 +61,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // API v1 routes
   await app.register(
     async (v1) => {
+      await v1.register(homeRoutes);
       await v1.register(catalogRoutes, { prefix: '/catalog' });
       await v1.register(catalogRoutes); // Also accessible as /api/v1/trending, /api/v1/movie, etc.
       await v1.register(searchRoutes, { prefix: '/search' });

@@ -173,6 +173,82 @@ export class AnilistService {
     anilistCache.set(cacheKey, list, 3600); // 1 hour cache
     return list;
   }
+
+  /**
+   * Get top spotlight anime with banner images, descriptions, dates and genres from AniList
+   */
+  async getSpotlightMedia(limit = 15): Promise<AnilistSpotlightMedia[]> {
+    const cacheKey = `spotlight:${limit}`;
+    const cached = anilistCache.get<AnilistSpotlightMedia[]>(cacheKey);
+    if (cached) return cached;
+
+    const query = `
+      query ($page: Int, $perPage: Int) {
+        Page(page: $page, perPage: $perPage) {
+          media(sort: [TRENDING_DESC, POPULARITY_DESC], type: ANIME) {
+            id
+            title {
+              romaji
+              english
+              native
+            }
+            bannerImage
+            coverImage {
+              extraLarge
+              large
+            }
+            description(asHtml: false)
+            format
+            episodes
+            nextAiringEpisode {
+              episode
+            }
+            startDate {
+              year
+              month
+              day
+            }
+            genres
+            averageScore
+          }
+        }
+      }
+    `;
+
+    const data = await this.queryGraphQL<any>(query, { page: 1, perPage: limit });
+    if (!data?.Page?.media) return [];
+
+    const mediaList: AnilistSpotlightMedia[] = data.Page.media;
+    anilistCache.set(cacheKey, mediaList, 1800); // 30 min cache
+    return mediaList;
+  }
+}
+
+export interface AnilistSpotlightMedia {
+  id: number;
+  title: {
+    romaji?: string | null;
+    english?: string | null;
+    native?: string | null;
+  };
+  bannerImage?: string | null;
+  coverImage?: {
+    extraLarge?: string | null;
+    large?: string | null;
+  } | null;
+  description?: string | null;
+  format?: string | null;
+  episodes?: number | null;
+  nextAiringEpisode?: {
+    episode: number;
+  } | null;
+  startDate?: {
+    year?: number | null;
+    month?: number | null;
+    day?: number | null;
+  } | null;
+  genres?: string[] | null;
+  averageScore?: number | null;
 }
 
 export const anilistService = new AnilistService();

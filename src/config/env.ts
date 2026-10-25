@@ -11,4 +11,5 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN || '*',
   rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '120', 10),
   rateLimitWindow: process.env.RATE_LIMIT_WINDOW || '1 minute',
+  adminApiKey: process.env.ADMIN_API_KEY || 'anisora_admin_secret_key_2026',
 };

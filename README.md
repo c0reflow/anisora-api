@@ -179,7 +179,66 @@ Connect via WebSocket at:
 
 ---
 
-### 3. Catalog & Discovery Endpoints
+### 3. Curated Daily Home Page (`/home`)
+
+An all-in-one endpoint designed for front-end home screens (inspired by modern streaming platforms like HiAnime and AniWatch).
+The complete home payload is assembled once, stored as a single JSON document in the PostgreSQL `home` table, and served directly with sub-10ms response times.
+
+#### Available Routes:
+- `GET /home` (or `/api/v1/home`): Fetches the daily cached home payload.
+- `GET /home?update=true` (or `/home&update` / `POST /home/sync`): Synchronizes fresh data from AniList & local DB, saves to PostgreSQL `home` table, and returns the newly synced data. **Requires Admin Bearer Token** (`Authorization: Bearer <ADMIN_API_KEY>`).
+
+#### Sections Included in Home Response:
+1. **Spotlight (`spotlight`)**: Top 15 featured anime with high-resolution **backdrop banners** (instead of posters), ranking badges (`#1 Spotlight`), format & release date (`TV Oct 5, 2026 HD`), sub/dub badges (`sub_episodes: 10, dub_episodes: 9`), full descriptions, scores, and genres.
+2. **Trending (`trending`)**: Top 20 trending anime resolved against our local database.
+3. **Top Airing (`top_airing`)**: Top 20 currently airing TV anime.
+4. **Most Popular (`most_popular`)**: Top 20 anime sorted by total views.
+5. **Most Favorite (`most_favorite`)**: Top 20 anime sorted by total likes.
+6. **Latest Completed (`latest_completed`)**: Top 20 recently finished series.
+7. **Genres (`genres`)**: Top 30 genres/tags with total anime counts.
+8. **Latest Episode (`latest_episodes`)**: Recently aired episodes with `episode_id` formatted as `AnisoraId&ep=int`.
+9. **New On AniSora (`new_on_anisora`)**: Recently added titles in the AniSora database.
+10. **Estimated Schedule (`estimated_schedule`)**: Complete airing schedule for today.
+11. **Top 10 (`top_10`)**: Ranked 1-to-10 anime leaderboard for the week.
+12. **Top Upcoming (`top_upcoming`)**: Top upcoming releases.
+13. **Latest Comments (`latest_comments`)**: Recent user discussions across episodes with resolved anime titles.
+14. **Updated Timestamp (`updated_at`)**: ISO 8601 timestamp when home data was last synced.
+
+#### Example Spotlight Item:
+```json
+{
+  "id": "195539",
+  "rank": 1,
+  "spotlight_badge": "#1 Spotlight",
+  "title": "Cyberpunk: Edgerunners 2",
+  "banner": "https://s4.anilist.co/file/anilistcdn/media/anime/banner/195539-lO5SUdp4SOrq.jpg",
+  "poster": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx195539-4LdfmKIHzuxr.png",
+  "description": "Cyberpunk: Edgerunners 2 pulls you back into Night City, where lives become entangled to the extreme...",
+  "type": "ONA",
+  "release_date": "Oct 20, 2026",
+  "quality": "HD",
+  "episodes": {
+    "sub": 10,
+    "dub": 9,
+    "total": 10
+  },
+  "sub_episodes": 10,
+  "dub_episodes": 9,
+  "total_episodes": 10,
+  "score": 8.4,
+  "tags": ["Action", "Drama", "Sci-Fi"]
+}
+```
+
+#### Admin Sync Command Example:
+```bash
+curl -X GET "http://localhost:3000/home?update=true" \
+  -H "Authorization: Bearer anisora_admin_secret_key_2026"
+```
+
+---
+
+### 4. Catalog & Discovery Endpoints
 
 Every discovery endpoint returns standardized anime item objects with fields:
 `id` (AniSora ID), `title`, `total_episodes`, `poster`, `description`, `type` (`movie` or `series`), `duration`, `score`, and `tag`.
@@ -257,7 +316,7 @@ All endpoints are accessible both directly at the root (e.g. `/trending`) and wi
 
 ---
 
-### 4. Anime Endpoints (`/api/v1/anime`)
+### 5. Anime Endpoints (`/api/v1/anime`)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -284,7 +343,7 @@ All endpoints are accessible both directly at the root (e.g. `/trending`) and wi
 - `page`: Page number (default: `1`)
 - `limit`: Records per page (default: `20`, max: `100`)
 
-### 5. Episode Comments Endpoints (`/api/v1/comments`)
+### 6. Episode Comments Endpoints (`/api/v1/comments`)
 
 Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `199918116&ep=1`), supporting both top-level parent discussions and threaded replies.
 
@@ -294,7 +353,7 @@ Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `1999
 | `POST` | `/api/v1/comments` | Post a new comment or reply (with `parent_comment_id`) |
 | `DELETE` | `/api/v1/comments/:id` | Delete a comment (cascades to all child replies) |
 
-### 6. User Accounts (`/api/v1/users`)
+### 7. User Accounts (`/api/v1/users`)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -302,7 +361,7 @@ Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `1999
 | `GET` | `/api/v1/users/:id` | Get public profile by User UUID |
 | `GET` | `/api/v1/users` | Paginated list of users |
 
-### 7. Metadata Endpoints (`/api/v1/meta`)
+### 8. Metadata Endpoints (`/api/v1/meta`)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |

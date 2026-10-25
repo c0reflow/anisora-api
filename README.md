@@ -179,7 +179,85 @@ Connect via WebSocket at:
 
 ---
 
-### 3. Anime Endpoints (`/api/v1/anime`)
+### 3. Catalog & Discovery Endpoints
+
+Every discovery endpoint returns standardized anime item objects with fields:
+`id` (AniSora ID), `title`, `total_episodes`, `poster`, `description`, `type` (`movie` or `series`), `duration`, `score`, and `tag`.
+
+All endpoints are accessible both directly at the root (e.g. `/trending`) and with the API prefix (e.g. `/api/v1/trending`).
+
+| Method | Endpoint | Source / Strategy | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/trending`<br>`/tranding` | AniList + Local DB | Fetches AniList trending IDs via GraphQL, resolves corresponding anime in our local PostgreSQL database with in-memory caching (30m TTL) and local DB fallback |
+| `GET` | `/top-airing` | Local PostgreSQL | Ongoing TV anime series sorted by score |
+| `GET` | `/most-popular` | Local PostgreSQL | Anime titles ordered by total views (`anime.views DESC`) |
+| `GET` | `/most-favorite` | Local PostgreSQL | Anime titles ordered by total likes (`anime.likes DESC`) |
+| `GET` | `/latest-completed` | Local PostgreSQL | Recently finished anime series sorted by latest season and score |
+| `GET` | `/top-upcoming` | Local PostgreSQL | Upcoming scheduled anime releases |
+| `GET` | `/top-ten`<br>`/top-10` | Local PostgreSQL | Top 10 anime leaderboard for `week`, `month`, or `year` (`?period=week\|month\|year`) |
+| `GET` | `/latest-episodes`<br>`/latest-episode` | AniList + Local DB | Recently aired anime episodes mapped with episode IDs formatted as `AnisoraId&ep=int` |
+| `GET` | `/schedule` | AniList + Local DB | Estimated airing schedule for a given date (`?date=YYYY-MM-DD`, defaults to today) |
+| `GET` | `/az-list` | Local PostgreSQL | Alphabetical catalog filter (`?letter=A`, `B`..`Z`, `0-9`, or `other`) |
+| `GET` | `/genres` | Local PostgreSQL | List all available genres/tags with total anime counts |
+| `GET` | `/genre/:genre` | Local PostgreSQL | Filter catalog by specific genre name (e.g. `/genre/action`) |
+| `GET` | `/movie`<br>`/movies` | Local PostgreSQL | Full movies list without any external AniList overhead |
+| `GET` | `/ova` | Local PostgreSQL | Original Video Animations (OVA) without external overhead |
+| `GET` | `/ona` | Local PostgreSQL | Original Net Animations (ONA) without external overhead |
+| `GET` | `/special` | Local PostgreSQL | Anime specials without external overhead |
+| `GET` | `/episodes/:id` | Local PostgreSQL | Returns all episode IDs for an anime formatted as `AnisoraId&ep=int` (e.g., `199918116&ep=1` through `199918116&ep=24`) |
+
+#### Example: Latest Episodes Response (`GET /latest-episodes`)
+```json
+{
+  "data": [
+    {
+      "id": "293894609",
+      "episode_id": "293894609&ep=5",
+      "episode_number": 5,
+      "title": "Tensei Kizoku, Kantei Skill de Nariagaru 3rd Season",
+      "poster": "https://cdn.myanimelist.net/images/anime/1000/12345.jpg",
+      "type": "series",
+      "duration": "24m",
+      "score": 7.42,
+      "tag": "fantasy",
+      "airing_at": "2026-10-25T14:30:00.000Z"
+    }
+  ],
+  "pagination": {
+    "total": 50,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 3,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  }
+}
+```
+
+#### Example: Get Episodes by AniSora ID (`GET /episodes/991164451`)
+```json
+{
+  "anisora_id": "991164451",
+  "title": "Bloody Bunny: The First Blood",
+  "total_episodes": 15,
+  "episodes": [
+    {
+      "episode_id": "991164451&ep=1",
+      "episode_number": 1,
+      "title": "Episode 1"
+    },
+    {
+      "episode_id": "991164451&ep=2",
+      "episode_number": 2,
+      "title": "Episode 2"
+    }
+  ]
+}
+```
+
+---
+
+### 4. Anime Endpoints (`/api/v1/anime`)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -206,7 +284,7 @@ Connect via WebSocket at:
 - `page`: Page number (default: `1`)
 - `limit`: Records per page (default: `20`, max: `100`)
 
-### 3. Episode Comments Endpoints (`/api/v1/comments`)
+### 5. Episode Comments Endpoints (`/api/v1/comments`)
 
 Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `199918116&ep=1`), supporting both top-level parent discussions and threaded replies.
 
@@ -216,7 +294,7 @@ Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `1999
 | `POST` | `/api/v1/comments` | Post a new comment or reply (with `parent_comment_id`) |
 | `DELETE` | `/api/v1/comments/:id` | Delete a comment (cascades to all child replies) |
 
-### 4. User Accounts (`/api/v1/users`)
+### 6. User Accounts (`/api/v1/users`)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -224,7 +302,7 @@ Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `1999
 | `GET` | `/api/v1/users/:id` | Get public profile by User UUID |
 | `GET` | `/api/v1/users` | Paginated list of users |
 
-### 5. Metadata Endpoints (`/api/v1/meta`)
+### 7. Metadata Endpoints (`/api/v1/meta`)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |

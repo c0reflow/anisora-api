@@ -243,7 +243,127 @@ async function runTests() {
     throw new Error('Search suggestions failed');
   }
 
-  console.log('\n=== ALL 14 API INTEGRATION TESTS PASSED SUCCESSFULLY! ===\n');
+  // Test 15: /trending and /tranding (AniList resolved in our DB)
+  console.log('\n[Test 15] Testing GET /trending and GET /tranding');
+  const trendingRes = await app.inject({ method: 'GET', url: '/trending?limit=3' });
+  console.log('Trending Status:', trendingRes.statusCode);
+  const trendingBody = JSON.parse(trendingRes.body);
+  console.log('Trending count:', trendingBody.data.length, 'Source:', trendingBody.source);
+  console.log('Trending #1:', trendingBody.data[0]?.title);
+  const trandingAliasRes = await app.inject({ method: 'GET', url: '/tranding?limit=1' });
+  console.log('Tranding alias Status:', trandingAliasRes.statusCode);
+  if (trendingRes.statusCode !== 200 || trandingAliasRes.statusCode !== 200) {
+    throw new Error('Trending endpoints failed');
+  }
+
+  // Test 16: Top Airing
+  console.log('\n[Test 16] Testing GET /top-airing?limit=3');
+  const airingRes = await app.inject({ method: 'GET', url: '/top-airing?limit=3' });
+  console.log('Top Airing Status:', airingRes.statusCode);
+  const airingBody = JSON.parse(airingRes.body);
+  console.log('Top Airing #1:', airingBody.data[0]?.title, 'Status:', airingBody.data[0]?.status);
+  if (airingRes.statusCode !== 200 || airingBody.data.length === 0) {
+    throw new Error('Top airing failed');
+  }
+
+  // Test 17: Most Popular & Most Favorite
+  console.log('\n[Test 17] Testing GET /most-popular & /most-favorite');
+  const popRes = await app.inject({ method: 'GET', url: '/most-popular?limit=2' });
+  const favRes = await app.inject({ method: 'GET', url: '/most-favorite?limit=2' });
+  console.log('Most Popular Status:', popRes.statusCode, 'Top:', JSON.parse(popRes.body).data[0]?.title);
+  console.log('Most Favorite Status:', favRes.statusCode, 'Top:', JSON.parse(favRes.body).data[0]?.title);
+  if (popRes.statusCode !== 200 || favRes.statusCode !== 200) {
+    throw new Error('Most Popular / Favorite failed');
+  }
+
+  // Test 18: Latest Completed & Top Upcoming
+  console.log('\n[Test 18] Testing GET /latest-completed & /top-upcoming');
+  const completedRes = await app.inject({ method: 'GET', url: '/latest-completed?limit=2' });
+  const upcomingRes = await app.inject({ method: 'GET', url: '/top-upcoming?limit=2' });
+  console.log('Latest Completed Status:', completedRes.statusCode, 'Sample:', JSON.parse(completedRes.body).data[0]?.title);
+  console.log('Top Upcoming Status:', upcomingRes.statusCode, 'Sample:', JSON.parse(upcomingRes.body).data[0]?.title);
+  if (completedRes.statusCode !== 200 || upcomingRes.statusCode !== 200) {
+    throw new Error('Latest Completed / Upcoming failed');
+  }
+
+  // Test 19: Top 10 Leaderboard (week, month, year)
+  console.log('\n[Test 19] Testing GET /top-ten?period=week and GET /top-10?period=month');
+  const topTenRes = await app.inject({ method: 'GET', url: '/top-ten?period=week' });
+  console.log('Top 10 Status:', topTenRes.statusCode);
+  const topTenBody = JSON.parse(topTenRes.body);
+  console.log(`Top 10 (${topTenBody.period}) rank 1:`, topTenBody.data[0]?.title, `(Rank: ${topTenBody.data[0]?.rank})`);
+  const top10Res = await app.inject({ method: 'GET', url: '/top-10?period=month' });
+  if (topTenRes.statusCode !== 200 || top10Res.statusCode !== 200 || topTenBody.data.length === 0) {
+    throw new Error('Top 10 failed');
+  }
+
+  // Test 20: Latest Episodes (with AnisoraId&ep=int)
+  console.log('\n[Test 20] Testing GET /latest-episodes');
+  const latestEpRes = await app.inject({ method: 'GET', url: '/latest-episodes?limit=3' });
+  console.log('Latest Episodes Status:', latestEpRes.statusCode);
+  const latestEpBody = JSON.parse(latestEpRes.body);
+  const firstEpisode = latestEpBody.data[0];
+  console.log('Latest Ep #1:', {
+    title: firstEpisode?.title,
+    episode_number: firstEpisode?.episode_number,
+    episode_id: firstEpisode?.episode_id,
+  });
+  if (
+    latestEpRes.statusCode !== 200 ||
+    !firstEpisode ||
+    !firstEpisode.episode_id.includes('&ep=')
+  ) {
+    throw new Error('Latest episodes failed or episode_id format is invalid');
+  }
+
+  // Test 21: Estimated Schedule
+  console.log('\n[Test 21] Testing GET /schedule');
+  const scheduleRes = await app.inject({ method: 'GET', url: '/schedule' });
+  console.log('Schedule Status:', scheduleRes.statusCode);
+  const scheduleBody = JSON.parse(scheduleRes.body);
+  console.log('Schedule date:', scheduleBody.date, 'Total scheduled airing:', scheduleBody.data.length);
+  if (scheduleRes.statusCode !== 200) {
+    throw new Error('Schedule failed');
+  }
+
+  // Test 22: A-Z List & Genres
+  console.log('\n[Test 22] Testing GET /az-list?letter=A and GET /genres');
+  const azRes = await app.inject({ method: 'GET', url: '/az-list?letter=A&limit=2' });
+  const genresRes = await app.inject({ method: 'GET', url: '/genres?limit=3' });
+  const genreFilterRes = await app.inject({ method: 'GET', url: '/genre/action?limit=2' });
+  console.log('A-Z List Status:', azRes.statusCode, 'A-Z Item:', JSON.parse(azRes.body).data[0]?.title);
+  console.log('Genres List Status:', genresRes.statusCode, 'Top Genre:', JSON.parse(genresRes.body).data[0]?.name);
+  console.log('Genre Filter Status:', genreFilterRes.statusCode, 'Action Anime:', JSON.parse(genreFilterRes.body).data[0]?.title);
+  if (azRes.statusCode !== 200 || genresRes.statusCode !== 200 || genreFilterRes.statusCode !== 200) {
+    throw new Error('A-Z or Genre routes failed');
+  }
+
+  // Test 23: Direct Formats (without AniList: /movie, /ova, /ona, /special)
+  console.log('\n[Test 23] Testing GET /movie, /ova, /ona, /special');
+  const movieRes = await app.inject({ method: 'GET', url: '/movie?limit=2' });
+  const ovaRes = await app.inject({ method: 'GET', url: '/ova?limit=2' });
+  const onaRes = await app.inject({ method: 'GET', url: '/ona?limit=2' });
+  const specialRes = await app.inject({ method: 'GET', url: '/special?limit=2' });
+  console.log('Movie Status:', movieRes.statusCode, 'Type:', JSON.parse(movieRes.body).data[0]?.type);
+  console.log('OVA Status:', ovaRes.statusCode, 'Type:', JSON.parse(ovaRes.body).data[0]?.type);
+  console.log('ONA Status:', onaRes.statusCode, 'Type:', JSON.parse(onaRes.body).data[0]?.type);
+  console.log('Special Status:', specialRes.statusCode, 'Type:', JSON.parse(specialRes.body).data[0]?.type);
+  if (movieRes.statusCode !== 200 || ovaRes.statusCode !== 200 || onaRes.statusCode !== 200 || specialRes.statusCode !== 200) {
+    throw new Error('Format routes failed');
+  }
+
+  // Test 24: Get Episodes by Anisora ID
+  console.log(`\n[Test 24] Testing GET /episodes/${testId}`);
+  const epRes = await app.inject({ method: 'GET', url: `/episodes/${testId}` });
+  console.log('Episodes Status:', epRes.statusCode);
+  const epBody = JSON.parse(epRes.body);
+  console.log(`Anime: ${epBody.title} has ${epBody.total_episodes} episodes`);
+  console.log('Sample Episode 1 ID:', epBody.episodes[0]?.episode_id);
+  if (epRes.statusCode !== 200 || epBody.episodes[0]?.episode_id !== `${testId}&ep=1`) {
+    throw new Error('Get episodes by ID failed');
+  }
+
+  console.log('\n=== ALL 24 API INTEGRATION TESTS PASSED SUCCESSFULLY! ===\n');
 
   await app.close();
   await prisma.$disconnect();

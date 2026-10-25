@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import fastifyWebsocket from '@fastify/websocket';
 import { registerSecurity } from './plugins/security.plugin';
 import { registerSwagger } from './plugins/swagger.plugin';
 import { healthRoutes } from './routes/health.routes';
@@ -7,6 +8,7 @@ import { animeRoutes } from './routes/anime.routes';
 import { metaRoutes } from './routes/meta.routes';
 import { commentRoutes } from './routes/comment.routes';
 import { userRoutes } from './routes/user.routes';
+import { searchRoutes, searchSuggestionRoutes } from './routes/search.routes';
 import { config } from './config/env';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -31,6 +33,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
+  // Register WebSocket support
+  await app.register(fastifyWebsocket);
+
   // Register security (CORS, Helmet, Rate Limit)
   await registerSecurity(app);
 
@@ -45,9 +50,15 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Health route
   await app.register(healthRoutes);
 
+  // Top-level search & suggestion route shortcuts
+  await app.register(searchRoutes, { prefix: '/search' });
+  await app.register(searchSuggestionRoutes, { prefix: '/searchsuggestion' });
+
   // API v1 routes
   await app.register(
     async (v1) => {
+      await v1.register(searchRoutes, { prefix: '/search' });
+      await v1.register(searchSuggestionRoutes, { prefix: '/searchsuggestion' });
       await v1.register(animeRoutes, { prefix: '/anime' });
       await v1.register(commentRoutes, { prefix: '/comments' });
       await v1.register(userRoutes, { prefix: '/users' });

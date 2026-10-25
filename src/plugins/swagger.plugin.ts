@@ -22,6 +22,7 @@ export async function registerSwagger(app: FastifyInstance) {
         },
       ],
       tags: [
+        { name: 'Search', description: 'Optimized anime search by name and quick top-5 autocomplete suggestions' },
         { name: 'Anime', description: 'Anime search, listing, details, and cross-provider resolution' },
         { name: 'Comments', description: 'Episode comments, replies, and discussion threads' },
         { name: 'Users', description: 'User account management and profiles' },

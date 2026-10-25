@@ -114,7 +114,72 @@ Open your browser and navigate to:
 - `GET /health`  
   Checks API status and PostgreSQL connection, returning total anime count.
 
-### 2. Anime Endpoints (`/api/v1/anime`)
+### 2. Search & Autocomplete Endpoints
+
+#### `GET /search` (or `/api/v1/search`)
+Fast search by anime name with the exact requested fields:
+- **Query Parameters**:
+  - `query` or `q`: Keyword to search by anime name or synonyms
+  - `page`: Page number (default: `1`)
+  - `limit`: Items per page (default: `20`)
+- **Response Format**:
+  ```json
+  {
+    "data": [
+      {
+        "id": "704261250",
+        "title": "Naruto: Shippuuden",
+        "total_episodes": 500,
+        "poster": "https://cdn.myanimelist.net/images/anime/1565/111305.jpg",
+        "description": null,
+        "type": "series",
+        "duration": "23m",
+        "score": 8.21,
+        "tag": "action"
+      }
+    ],
+    "pagination": {
+      "total": 48,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 3,
+      "hasNextPage": true,
+      "hasPrevPage": false
+    }
+  }
+  ```
+
+#### `GET /searchsuggestion` (or `/api/v1/searchsuggestion`)
+Ultra-fast, lightweight search suggestions returning **only the top 5 matches**:
+- **Query Parameters**:
+  - `query` or `q`: Search prefix or keyword
+- **Response Format**:
+  ```json
+  {
+    "query": "naruto",
+    "suggestions": [
+      {
+        "id": "704261250",
+        "title": "Naruto: Shippuuden",
+        "poster": "https://cdn.myanimelist.net/images/anime/1565/111305.jpg",
+        "type": "series",
+        "score": 8.21,
+        "year": 2007,
+        "tag": "action"
+      }
+    ]
+  }
+  ```
+
+#### ⚡ Real-Time WebSocket Autocomplete
+Connect via WebSocket at:
+- `ws://localhost:3000/searchsuggestion/ws` (or `ws://localhost:3000/api/v1/searchsuggestion/ws`)
+- **Send**: `{"query": "attack"}` or plain text `"attack"`
+- **Receive**: Instant JSON response with top 5 suggestions as you type with zero HTTP overhead.
+
+---
+
+### 3. Anime Endpoints (`/api/v1/anime`)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |

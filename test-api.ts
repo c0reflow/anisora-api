@@ -193,7 +193,57 @@ async function runTests() {
   await app.inject({ method: 'DELETE', url: `/api/v1/comments/${comment1.id}` });
   console.log('Cleaned up test comments successfully.');
 
-  console.log('\n=== ALL 12 API INTEGRATION TESTS PASSED SUCCESSFULLY! ===\n');
+  // Test 13: Dedicated Search by Name with exact requested fields
+  console.log('\n[Test 13] Testing GET /search?query=naruto&page=1');
+  const searchNameRes = await app.inject({
+    method: 'GET',
+    url: '/search?query=naruto&page=1&limit=3',
+  });
+  console.log('Search Status:', searchNameRes.statusCode);
+  const searchNameBody = JSON.parse(searchNameRes.body);
+  console.log('Found matches:', searchNameBody.pagination.total);
+  const sample = searchNameBody.data[0];
+  console.log('Sample Search Item Structure:', {
+    id: sample?.id,
+    title: sample?.title,
+    total_episodes: sample?.total_episodes,
+    poster: sample?.poster ? `${sample.poster.slice(0, 35)}...` : null,
+    description: sample?.description,
+    type: sample?.type,
+    duration: sample?.duration,
+    score: sample?.score,
+    tag: sample?.tag,
+  });
+  if (
+    searchNameRes.statusCode !== 200 ||
+    !sample ||
+    !('total_episodes' in sample) ||
+    !('type' in sample) ||
+    !('duration' in sample) ||
+    !('score' in sample) ||
+    !('tag' in sample) ||
+    (sample.type !== 'movie' && sample.type !== 'series')
+  ) {
+    throw new Error('Search by name failed or missing requested fields');
+  }
+
+  // Test 14: Top 5 Quick Search Suggestions
+  console.log('\n[Test 14] Testing GET /searchsuggestion?query=naruto');
+  const suggestRes = await app.inject({
+    method: 'GET',
+    url: '/searchsuggestion?query=naruto',
+  });
+  console.log('Suggestion Status:', suggestRes.statusCode);
+  const suggestBody = JSON.parse(suggestRes.body);
+  console.log(`Returned ${suggestBody.suggestions.length} suggestions (max 5):`);
+  suggestBody.suggestions.forEach((s: any, idx: number) => {
+    console.log(`  ${idx + 1}. [${s.type.toUpperCase()}] ${s.title} (${s.year ?? 'N/A'}) - Score: ${s.score}`);
+  });
+  if (suggestRes.statusCode !== 200 || suggestBody.suggestions.length > 5) {
+    throw new Error('Search suggestions failed');
+  }
+
+  console.log('\n=== ALL 14 API INTEGRATION TESTS PASSED SUCCESSFULLY! ===\n');
 
   await app.close();
   await prisma.$disconnect();

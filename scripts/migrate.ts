@@ -6,9 +6,10 @@ async function migrate() {
   const statements = [
     `CREATE EXTENSION IF NOT EXISTS pgcrypto;`,
 
-    // Add views and likes to anime table
+    // Add views, likes and description to anime table
     `ALTER TABLE anime ADD COLUMN IF NOT EXISTS views BIGINT NOT NULL DEFAULT 0;`,
     `ALTER TABLE anime ADD COLUMN IF NOT EXISTS likes BIGINT NOT NULL DEFAULT 0;`,
+    `ALTER TABLE anime ADD COLUMN IF NOT EXISTS description TEXT DEFAULT NULL;`,
 
     // 1. User accounts
     `CREATE TABLE IF NOT EXISTS users (

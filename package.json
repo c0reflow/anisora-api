@@ -40,6 +40,7 @@
     "@fastify/swagger": "^9.9.2",
     "@fastify/swagger-ui": "^6.1.2",
     "@fastify/type-provider-typebox": "^6.3.0",
+    "@fastify/websocket": "^11.3.4",
     "@prisma/client": "^6.19.3",
     "@sinclair/typebox": "^0.34.52",
     "dotenv": "^18.0.9",

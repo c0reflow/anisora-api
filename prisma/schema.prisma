@@ -37,6 +37,7 @@ model anime {
   sources                                                   Json
   views                                                     BigInt            @default(0)
   likes                                                     BigInt            @default(0)
+  description                                               String?
   anime_producers                                           anime_producers[]
   anime_relations_anime_relations_anisora_idToanime         anime_relations[] @relation("anime_relations_anisora_idToanime")
   anime_relations_anime_relations_related_anisora_idToanime anime_relations[] @relation("anime_relations_related_anisora_idToanime")

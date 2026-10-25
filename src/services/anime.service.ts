@@ -3,9 +3,14 @@ import prisma from '../db/prisma';
 import { AnimeListQueryType, AnimeItemType, AnimeDetailType } from '../schemas/anime.schema';
 
 export function formatAnimeItem(item: any): AnimeItemType {
+  const englishTitle = item.default_name?.name || item.title;
+  const jpName = item.default_name?.jname || item.title;
+
   return {
     anisora_id: item.anisora_id.toString(),
-    title: item.title,
+    title: englishTitle,
+    jname: jpName,
+    romaji: jpName,
     type: item.type,
     episodes: item.episodes ?? null,
     status: item.status,
@@ -61,6 +66,8 @@ export class AnimeService {
       const q = params.q.trim();
       where.OR = [
         { title: { contains: q, mode: 'insensitive' } },
+        { default_name: { name: { contains: q, mode: 'insensitive' } } },
+        { default_name: { jname: { contains: q, mode: 'insensitive' } } },
         { anime_synonyms: { some: { synonym: { contains: q, mode: 'insensitive' } } } },
       ];
     }
@@ -125,6 +132,7 @@ export class AnimeService {
         skip,
         take: limit,
         include: {
+          default_name: true,
           anime_studios: true,
           anime_tags: true,
         },
@@ -160,18 +168,27 @@ export class AnimeService {
     const item = await prisma.anime.findUnique({
       where: { anisora_id: id },
       include: {
+        default_name: true,
         anime_synonyms: true,
         anime_studios: true,
         anime_producers: true,
         anime_tags: true,
         anime_relations_anime_relations_anisora_idToanime: {
           include: {
-            anime_anime_relations_related_anisora_idToanime: true,
+            anime_anime_relations_related_anisora_idToanime: {
+              include: {
+                default_name: true,
+              },
+            },
           },
         },
         anime_relations_anime_relations_related_anisora_idToanime: {
           include: {
-            anime_anime_relations_anisora_idToanime: true,
+            anime_anime_relations_anisora_idToanime: {
+              include: {
+                default_name: true,
+              },
+            },
           },
         },
       },
@@ -185,9 +202,14 @@ export class AnimeService {
     for (const rel of item.anime_relations_anime_relations_anisora_idToanime) {
       const target = rel.anime_anime_relations_related_anisora_idToanime;
       if (target && !relationsMap.has(target.anisora_id.toString())) {
+        const englishTitle = target.default_name?.name || target.title;
+        const jpName = target.default_name?.jname || target.title;
+
         relationsMap.set(target.anisora_id.toString(), {
           anisora_id: target.anisora_id.toString(),
-          title: target.title,
+          title: englishTitle,
+          jname: jpName,
+          romaji: jpName,
           type: target.type,
           status: target.status,
           picture: target.picture,
@@ -200,9 +222,14 @@ export class AnimeService {
     for (const rel of item.anime_relations_anime_relations_related_anisora_idToanime) {
       const target = rel.anime_anime_relations_anisora_idToanime;
       if (target && !relationsMap.has(target.anisora_id.toString())) {
+        const englishTitle = target.default_name?.name || target.title;
+        const jpName = target.default_name?.jname || target.title;
+
         relationsMap.set(target.anisora_id.toString(), {
           anisora_id: target.anisora_id.toString(),
-          title: target.title,
+          title: englishTitle,
+          jname: jpName,
+          romaji: jpName,
           type: target.type,
           status: target.status,
           picture: target.picture,

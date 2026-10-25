@@ -19,7 +19,9 @@ export const ExternalIdsSchema = Type.Object({
 export const AnimeItemSchema = Type.Object(
   {
     anisora_id: Type.String({ description: 'Unique AniSora ID (64-bit int as string)' }),
-    title: Type.String({ description: 'Primary anime title' }),
+    title: Type.String({ description: 'English display title (from default_name)' }),
+    jname: Type.Union([Type.String(), Type.Null()], { description: 'Japanese Romaji name' }),
+    romaji: Type.Optional(Type.Union([Type.String(), Type.Null()])),
     type: Type.String({ description: 'Format type (TV, MOVIE, OVA, ONA, SPECIAL, etc.)' }),
     episodes: Type.Union([Type.Integer(), Type.Null()]),
     status: Type.String({ description: 'Release status (FINISHED, ONGOING, UPCOMING)' }),
@@ -48,7 +50,9 @@ export type AnimeItemType = Static<typeof AnimeItemSchema>;
 
 export const AnimeRelationSummarySchema = Type.Object({
   anisora_id: Type.String(),
-  title: Type.String(),
+  title: Type.String({ description: 'English display title' }),
+  jname: Type.Union([Type.String(), Type.Null()], { description: 'Japanese Romaji name' }),
+  romaji: Type.Optional(Type.Union([Type.String(), Type.Null()])),
   type: Type.String(),
   status: Type.String(),
   picture: Type.Union([Type.String(), Type.Null()]),

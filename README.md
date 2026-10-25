@@ -372,6 +372,29 @@ Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `1999
 
 ---
 
+## 🏷️ Title Localization & Default Names
+
+To provide an optimal client experience, AniSora maps and stores English titles as the primary display `title` and retains the Japanese Romaji name under `jname` (and `romaji`):
+
+### `default_name` PostgreSQL Table
+```sql
+CREATE TABLE default_name (
+    anisora_id BIGINT PRIMARY KEY REFERENCES anime(anisora_id) ON DELETE CASCADE,
+    name VARCHAR(500) NOT NULL,          -- English title (e.g., "Attack on Titan")
+    jname VARCHAR(500) NOT NULL,         -- Japanese Romaji name (e.g., "Shingeki no Kyojin")
+    hianime_id VARCHAR(191)              -- HiAnime catalog identifier
+);
+```
+
+### Title Resolution Logic
+1. If the anime has a `hianime_id`, it is matched against the HiAnime catalog:
+   - `title` is set to the English `name` (e.g., `"Attack on Titan"`).
+   - `jname` and `romaji` are set to the Japanese Romaji name (e.g., `"Shingeki no Kyojin"`).
+2. If `hianime_id` is missing or unindexed, it safely falls back to the original database title.
+3. All search endpoints (`/search`, `/searchsuggestion`, `/api/v1/anime?q=...`) index both `name`, `jname`, `title`, and synonyms simultaneously so queries in either English or Romaji return accurate results.
+
+---
+
 ## 💡 BigInt & Decimal Serialization
 
 PostgreSQL stores primary IDs (`anisora_id`, `anilist_id`, etc.) as 64-bit BigInts and scores/duration as Decimals.  
@@ -381,3 +404,4 @@ This project implements a clean polyfill layer in [`src/db/prisma.ts`](file:///a
 - `BigInt.prototype.toJSON = function() { return this.toString(); }`
 - `Prisma.Decimal.prototype.toJSON = function() { return Number(this.toString()); }`
 - External IDs and AniSora IDs are presented as strings to eliminate any precision loss in JavaScript clients.
+

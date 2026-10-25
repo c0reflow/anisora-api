@@ -44,6 +44,7 @@ model anime {
   anime_studios                                             anime_studios[]
   anime_synonyms                                            anime_synonyms[]
   anime_tags                                                anime_tags[]
+  default_name                                              default_name?
 
   @@index([hianime_id], map: "idx_anime_hianime_id")
   @@index([season_year, season], map: "idx_anime_season")
@@ -182,4 +183,16 @@ model home {
   id         String   @id @default("current") @db.VarChar(50)
   data       Json
   updated_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model default_name {
+  anisora_id BigInt  @id
+  name       String  @db.VarChar(500)
+  jname      String  @db.VarChar(500)
+  hianime_id String? @db.VarChar(191)
+  anime      anime   @relation(fields: [anisora_id], references: [anisora_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([hianime_id], map: "idx_default_name_hianime_id")
+  @@index([name], map: "idx_default_name_name")
+  @@index([jname], map: "idx_default_name_jname")
 }

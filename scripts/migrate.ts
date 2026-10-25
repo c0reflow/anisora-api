@@ -92,6 +92,17 @@ async function migrate() {
         data JSONB NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );`,
+
+    // 7. Default names table (English title from HiAnime catalog, Japanese Romaji from current title)
+    `CREATE TABLE IF NOT EXISTS default_name (
+        anisora_id BIGINT PRIMARY KEY REFERENCES anime(anisora_id) ON DELETE CASCADE,
+        name VARCHAR(500) NOT NULL,
+        jname VARCHAR(500) NOT NULL,
+        hianime_id VARCHAR(191)
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_default_name_hianime_id ON default_name(hianime_id);`,
+    `CREATE INDEX IF NOT EXISTS idx_default_name_name ON default_name(name);`,
+    `CREATE INDEX IF NOT EXISTS idx_default_name_jname ON default_name(jname);`,
   ];
 
   for (const sql of statements) {

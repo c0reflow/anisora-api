@@ -11,7 +11,9 @@ export const SpotlightItemSchema = Type.Object(
     id: Type.String({ description: 'AniSora Anime ID' }),
     rank: Type.Integer({ description: 'Spotlight rank (1-15)', example: 1 }),
     spotlight_badge: Type.String({ example: '#1 Spotlight' }),
-    title: Type.String({ example: 'Cyberpunk: Edgerunners 2' }),
+    title: Type.String({ description: 'English title', example: 'Cyberpunk: Edgerunners 2' }),
+    jname: Type.Union([Type.String(), Type.Null()], { description: 'Japanese Romaji name', example: 'Cyberpunk: Edgerunners 2' }),
+    romaji: Type.Optional(Type.Union([Type.String(), Type.Null()])),
     banner: Type.String({
       description: 'High-resolution banner backdrop image URL',
       example: 'https://s4.anilist.co/file/anilistcdn/media/anime/banner/195539-lO5SUdp4SOrq.jpg',

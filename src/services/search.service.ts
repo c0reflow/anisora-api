@@ -54,6 +54,8 @@ export class SearchService {
     if (searchTerm) {
       where.OR = [
         { title: { contains: searchTerm, mode: 'insensitive' } },
+        { default_name: { is: { name: { contains: searchTerm, mode: 'insensitive' } } } },
+        { default_name: { is: { jname: { contains: searchTerm, mode: 'insensitive' } } } },
         { anime_synonyms: { some: { synonym: { contains: searchTerm, mode: 'insensitive' } } } },
       ];
     }
@@ -76,6 +78,12 @@ export class SearchService {
           duration_value: true,
           duration_unit: true,
           score_mean: true,
+          default_name: {
+            select: {
+              name: true,
+              jname: true,
+            },
+          },
           anime_tags: {
             take: 1,
             select: { tag: true },
@@ -86,17 +94,24 @@ export class SearchService {
 
     const totalPages = Math.ceil(total / limit);
 
-    const data: AnimeSearchResultItemType[] = items.map((item) => ({
-      id: item.anisora_id.toString(),
-      title: item.title,
-      total_episodes: item.episodes ?? null,
-      poster: item.picture || item.thumbnail || null,
-      description: item.description ?? null,
-      type: formatAnimeType(item.type),
-      duration: formatDuration(item.duration_value, item.duration_unit),
-      score: item.score_mean != null ? Number(Number(item.score_mean).toFixed(2)) : null,
-      tag: item.anime_tags?.[0]?.tag ?? null,
-    }));
+    const data: AnimeSearchResultItemType[] = items.map((item) => {
+      const englishTitle = item.default_name?.name || item.title;
+      const jpName = item.default_name?.jname || item.title;
+
+      return {
+        id: item.anisora_id.toString(),
+        title: englishTitle,
+        jname: jpName,
+        romaji: jpName,
+        total_episodes: item.episodes ?? null,
+        poster: item.picture || item.thumbnail || null,
+        description: item.description ?? null,
+        type: formatAnimeType(item.type),
+        duration: formatDuration(item.duration_value, item.duration_unit),
+        score: item.score_mean != null ? Number(Number(item.score_mean).toFixed(2)) : null,
+        tag: item.anime_tags?.[0]?.tag ?? null,
+      };
+    });
 
     return {
       data,
@@ -127,6 +142,8 @@ export class SearchService {
       where: {
         OR: [
           { title: { contains: term, mode: 'insensitive' } },
+          { default_name: { is: { name: { contains: term, mode: 'insensitive' } } } },
+          { default_name: { is: { jname: { contains: term, mode: 'insensitive' } } } },
           { anime_synonyms: { some: { synonym: { contains: term, mode: 'insensitive' } } } },
         ],
       },
@@ -140,6 +157,12 @@ export class SearchService {
         type: true,
         score_mean: true,
         season_year: true,
+        default_name: {
+          select: {
+            name: true,
+            jname: true,
+          },
+        },
         anime_tags: {
           take: 1,
           select: { tag: true },
@@ -147,15 +170,22 @@ export class SearchService {
       },
     });
 
-    const suggestions: AnimeSuggestionItemType[] = items.map((item) => ({
-      id: item.anisora_id.toString(),
-      title: item.title,
-      poster: item.picture || item.thumbnail || null,
-      type: formatAnimeType(item.type),
-      score: item.score_mean != null ? Number(Number(item.score_mean).toFixed(2)) : null,
-      year: item.season_year ?? null,
-      tag: item.anime_tags?.[0]?.tag ?? null,
-    }));
+    const suggestions: AnimeSuggestionItemType[] = items.map((item) => {
+      const englishTitle = item.default_name?.name || item.title;
+      const jpName = item.default_name?.jname || item.title;
+
+      return {
+        id: item.anisora_id.toString(),
+        title: englishTitle,
+        jname: jpName,
+        romaji: jpName,
+        poster: item.picture || item.thumbnail || null,
+        type: formatAnimeType(item.type),
+        score: item.score_mean != null ? Number(Number(item.score_mean).toFixed(2)) : null,
+        year: item.season_year ?? null,
+        tag: item.anime_tags?.[0]?.tag ?? null,
+      };
+    });
 
     return {
       query: term,

@@ -12,9 +12,14 @@ import {
 } from '../schemas/catalog.schema';
 
 export function mapToSearchItem(item: any): AnimeSearchResultItemType {
+  const englishTitle = item.default_name?.name || item.title;
+  const jpName = item.default_name?.jname || item.title;
+
   return {
     id: item.anisora_id.toString(),
-    title: item.title,
+    title: englishTitle,
+    jname: jpName,
+    romaji: jpName,
     total_episodes: item.episodes ?? null,
     poster: item.picture || item.thumbnail || null,
     description: item.description ?? null,
@@ -44,6 +49,7 @@ export class CatalogService {
           },
           include: {
             anime_tags: { take: 1, select: { tag: true } },
+            default_name: { select: { name: true, jname: true } },
           },
         });
 
@@ -79,7 +85,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ score_mean: { sort: 'desc', nulls: 'last' } }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -115,7 +124,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ score_mean: { sort: 'desc', nulls: 'last' } }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -145,7 +157,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ views: 'desc' }, { score_mean: { sort: 'desc', nulls: 'last' } }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -175,7 +190,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ likes: 'desc' }, { score_mean: { sort: 'desc', nulls: 'last' } }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -210,7 +228,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ season_year: 'desc' }, { score_mean: { sort: 'desc', nulls: 'last' } }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -246,7 +267,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ season_year: { sort: 'asc', nulls: 'last' } }, { anisora_id: 'asc' }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -281,7 +305,10 @@ export class CatalogService {
       where,
       take: 10,
       orderBy: [{ score_mean: { sort: 'desc', nulls: 'last' } }, { views: 'desc' }],
-      include: { anime_tags: { take: 1, select: { tag: true } } },
+      include: {
+        anime_tags: { take: 1, select: { tag: true } },
+        default_name: { select: { name: true, jname: true } },
+      },
     });
 
     const data = items.map((item, index) => ({
@@ -311,7 +338,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ score_mean: { sort: 'desc', nulls: 'last' } }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -349,7 +379,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ score_mean: { sort: 'desc', nulls: 'last' } }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -376,11 +409,19 @@ export class CatalogService {
     const where: Prisma.animeWhereInput = {};
 
     if (cleanLetter === '0-9') {
-      where.OR = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => ({
-        title: { startsWith: digit },
-      }));
+      where.OR = [
+        ...['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => ({
+          title: { startsWith: digit },
+        })),
+        ...['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => ({
+          default_name: { name: { startsWith: digit } },
+        })),
+      ];
     } else if (cleanLetter !== 'ALL' && cleanLetter.length === 1 && cleanLetter >= 'A' && cleanLetter <= 'Z') {
-      where.title = { startsWith: cleanLetter, mode: 'insensitive' };
+      where.OR = [
+        { title: { startsWith: cleanLetter, mode: 'insensitive' } },
+        { default_name: { name: { startsWith: cleanLetter, mode: 'insensitive' } } },
+      ];
     }
 
     const [total, items] = await Promise.all([
@@ -390,7 +431,10 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: { title: 'asc' },
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
@@ -422,6 +466,7 @@ export class CatalogService {
           },
           include: {
             anime_tags: { take: 1, select: { tag: true } },
+            default_name: { select: { name: true, jname: true } },
           },
         });
 
@@ -432,11 +477,16 @@ export class CatalogService {
           const matched = itemMap.get(air.anilistId.toString());
           if (matched) {
             const anisoraId = matched.anisora_id.toString();
+            const englishTitle = matched.default_name?.name || matched.title;
+            const jpName = matched.default_name?.jname || matched.title;
+
             results.push({
               id: anisoraId,
               episode_id: `${anisoraId}&ep=${air.episode}`,
               episode_number: air.episode,
-              title: matched.title,
+              title: englishTitle,
+              jname: jpName,
+              romaji: jpName,
               poster: matched.picture || matched.thumbnail || null,
               type: formatAnimeType(matched.type),
               duration: formatDuration(matched.duration_value, matched.duration_unit),
@@ -474,18 +524,26 @@ export class CatalogService {
         skip,
         take: limit,
         orderBy: [{ score_mean: { sort: 'desc', nulls: 'last' } }],
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       }),
     ]);
 
     const data: LatestEpisodeItemType[] = items.map((item) => {
       const epNum = item.episodes || 1;
       const anisoraId = item.anisora_id.toString();
+      const englishTitle = item.default_name?.name || item.title;
+      const jpName = item.default_name?.jname || item.title;
+
       return {
         id: anisoraId,
         episode_id: `${anisoraId}&ep=${epNum}`,
         episode_number: epNum,
-        title: item.title,
+        title: englishTitle,
+        jname: jpName,
+        romaji: jpName,
         poster: item.picture || item.thumbnail || null,
         type: formatAnimeType(item.type),
         duration: formatDuration(item.duration_value, item.duration_unit),
@@ -526,7 +584,10 @@ export class CatalogService {
       const bigIntIds = schedule.map((s) => BigInt(s.anilistId));
       const dbItems = await prisma.anime.findMany({
         where: { anilist_id: { in: bigIntIds } },
-        include: { anime_tags: { take: 1, select: { tag: true } } },
+        include: {
+          anime_tags: { take: 1, select: { tag: true } },
+          default_name: { select: { name: true, jname: true } },
+        },
       });
 
       const itemMap = new Map(dbItems.map((item) => [item.anilist_id?.toString(), item]));
@@ -548,6 +609,8 @@ export class CatalogService {
             : {
                 id: sch.anilistId.toString(),
                 title: sch.title,
+                jname: sch.title,
+                romaji: sch.title,
                 total_episodes: null,
                 poster: null,
                 description: null,
@@ -592,6 +655,7 @@ export class CatalogService {
         title: true,
         episodes: true,
         type: true,
+        default_name: { select: { name: true, jname: true } },
       },
     });
 
@@ -600,6 +664,8 @@ export class CatalogService {
     const anisoraId = anime.anisora_id.toString();
     const isMovie = anime.type?.toUpperCase() === 'MOVIE';
     const totalEpisodes = isMovie ? 1 : anime.episodes || 1;
+    const englishTitle = anime.default_name?.name || anime.title;
+    const jpName = anime.default_name?.jname || anime.title;
 
     const episodes = [];
     for (let i = 1; i <= Math.min(totalEpisodes, 1500); i++) {
@@ -612,7 +678,9 @@ export class CatalogService {
 
     return {
       anisora_id: anisoraId,
-      title: anime.title,
+      title: englishTitle,
+      jname: jpName,
+      romaji: jpName,
       total_episodes: anime.episodes,
       episodes,
     };

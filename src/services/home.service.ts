@@ -73,7 +73,10 @@ export class HomeService {
     const localMatches = spotlightIds.length > 0
       ? await prisma.anime.findMany({
           where: { anilist_id: { in: spotlightIds } },
-          include: { anime_tags: { take: 3 } },
+          include: {
+            anime_tags: { take: 3 },
+            default_name: true,
+          },
         })
       : [];
 
@@ -94,7 +97,8 @@ export class HomeService {
       const subEpisodes = currentAired;
       const dubEpisodes = Math.max(0, currentAired - 1);
 
-      const title = local?.title || m.title?.english || m.title?.romaji || 'Unknown Title';
+      const title = local?.default_name?.name || m.title?.english || m.title?.romaji || local?.title || 'Unknown Title';
+      const jpName = local?.default_name?.jname || m.title?.romaji || local?.title || 'Unknown Title';
       const banner = m.bannerImage || local?.picture || 'https://cdn.myanimelist.net/images/anime/1565/111305.jpg';
       const poster = local?.picture || m.coverImage?.extraLarge || m.coverImage?.large || null;
       const description = this.cleanDescription(local?.description || m.description);
@@ -109,6 +113,8 @@ export class HomeService {
         rank,
         spotlight_badge: `#${rank} Spotlight`,
         title,
+        jname: jpName,
+        romaji: jpName,
         banner,
         poster,
         description,
@@ -161,20 +167,28 @@ export class HomeService {
         anime_tags: {
           take: 1,
         },
+        default_name: true,
       },
     });
 
-    const newOnAnisora: AnimeSearchResultItemType[] = recentRecords.map((a) => ({
-      id: a.anisora_id.toString(),
-      title: a.title,
-      total_episodes: a.episodes,
-      poster: a.picture,
-      description: a.description,
-      type: formatAnimeType(a.type),
-      duration: formatDuration(a.duration_value, a.duration_unit),
-      score: a.score_mean ? Number(Number(a.score_mean).toFixed(2)) : null,
-      tag: a.anime_tags[0]?.tag || null,
-    }));
+    const newOnAnisora: AnimeSearchResultItemType[] = recentRecords.map((a) => {
+      const englishTitle = a.default_name?.name || a.title;
+      const jpName = a.default_name?.jname || a.title;
+
+      return {
+        id: a.anisora_id.toString(),
+        title: englishTitle,
+        jname: jpName,
+        romaji: jpName,
+        total_episodes: a.episodes,
+        poster: a.picture,
+        description: a.description,
+        type: formatAnimeType(a.type),
+        duration: formatDuration(a.duration_value, a.duration_unit),
+        score: a.score_mean ? Number(Number(a.score_mean).toFixed(2)) : null,
+        tag: a.anime_tags[0]?.tag || null,
+      };
+    });
 
     // 4. Latest Comments with resolved anime titles
     const recentComments = await prisma.anime_comments.findMany({
@@ -202,13 +216,17 @@ export class HomeService {
     const commentAnime = animeIds.length > 0
       ? await prisma.anime.findMany({
           where: { anisora_id: { in: animeIds } },
-          select: { anisora_id: true, title: true },
+          select: {
+            anisora_id: true,
+            title: true,
+            default_name: { select: { name: true, jname: true } },
+          },
         })
       : [];
 
     const commentAnimeMap = new Map<string, string>();
     for (const a of commentAnime) {
-      commentAnimeMap.set(a.anisora_id.toString(), a.title);
+      commentAnimeMap.set(a.anisora_id.toString(), a.default_name?.name || a.title);
     }
 
     const latestComments: HomeLatestCommentType[] = recentComments.map((c) => {

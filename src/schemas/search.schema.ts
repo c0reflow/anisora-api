@@ -4,7 +4,9 @@ import { PaginationMetaSchema } from './common.schema';
 export const AnimeSearchResultItemSchema = Type.Object(
   {
     id: Type.String({ description: 'AniSora Anime ID' }),
-    title: Type.String({ description: 'Anime title' }),
+    title: Type.String({ description: 'English title (from default_name)' }),
+    jname: Type.Union([Type.String(), Type.Null()], { description: 'Japanese Romaji name' }),
+    romaji: Type.Optional(Type.Union([Type.String(), Type.Null()])),
     total_episodes: Type.Union([Type.Integer(), Type.Null()], {
       description: 'Total number of episodes',
       example: 24,
@@ -72,7 +74,9 @@ export type SearchQueryType = Static<typeof SearchQuerySchema>;
 export const AnimeSuggestionItemSchema = Type.Object(
   {
     id: Type.String({ description: 'AniSora Anime ID' }),
-    title: Type.String({ description: 'Anime title' }),
+    title: Type.String({ description: 'English title' }),
+    jname: Type.Union([Type.String(), Type.Null()], { description: 'Japanese Romaji name' }),
+    romaji: Type.Optional(Type.Union([Type.String(), Type.Null()])),
     poster: Type.Union([Type.String(), Type.Null()]),
     type: Type.Union([Type.Literal('movie'), Type.Literal('series')]),
     score: Type.Union([Type.Number(), Type.Null()]),

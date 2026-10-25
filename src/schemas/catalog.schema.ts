@@ -75,24 +75,42 @@ export const ScheduleResponseSchema = Type.Object(
   { $id: 'ScheduleResponse', description: 'Estimated airing schedule for a given day' }
 );
 
+export const EpisodeItemSchema = Type.Object(
+  {
+    episode_id: Type.String({
+      description: 'Episode ID formatted as AnisoraId&ep=int',
+      example: '800630028&ep=1',
+    }),
+    episode_number: Type.Integer({ example: 1 }),
+    title: Type.String({ description: 'Full episode title', example: 'Episode 1 - Asta and Yuno' }),
+    name: Type.String({ description: 'Clean episode name', example: 'Asta and Yuno' }),
+    thumbnail: Type.Union([Type.String(), Type.Null()], {
+      description: 'Episode thumbnail artwork URL',
+    }),
+    duration: Type.Union([Type.String(), Type.Null()], {
+      description: 'Episode duration string',
+      example: '23m',
+    }),
+    url: Type.Optional(Type.Union([Type.String(), Type.Null()], { description: 'Streaming provider link' })),
+    site: Type.Optional(Type.Union([Type.String(), Type.Null()], { description: 'Streaming provider name' })),
+  },
+  { description: 'Individual episode details' }
+);
+
+export type EpisodeItemType = Static<typeof EpisodeItemSchema>;
+
 export const AnimeEpisodesResponseSchema = Type.Object(
   {
     anisora_id: Type.String({ description: 'AniSora ID' }),
-    title: Type.String(),
+    title: Type.String({ description: 'English display title' }),
+    jname: Type.Optional(Type.Union([Type.String(), Type.Null()], { description: 'Japanese Romaji name' })),
+    romaji: Type.Optional(Type.Union([Type.String(), Type.Null()], { description: 'Japanese Romaji name' })),
     total_episodes: Type.Union([Type.Integer(), Type.Null()]),
-    episodes: Type.Array(
-      Type.Object({
-        episode_id: Type.String({
-          description: 'Episode ID formatted as AnisoraId&ep=int',
-          example: '199918116&ep=1',
-        }),
-        episode_number: Type.Integer({ example: 1 }),
-        title: Type.String({ example: 'Episode 1' }),
-      })
-    ),
+    episodes: Type.Array(EpisodeItemSchema),
   },
   { $id: 'AnimeEpisodesResponse', description: 'List of episodes for an anime' }
 );
+
 
 export const AzQuerySchema = Type.Intersect([
   PaginationQuerySchema,

@@ -293,22 +293,34 @@ All endpoints are accessible both directly at the root (e.g. `/trending`) and wi
 }
 ```
 
-#### Example: Get Episodes by AniSora ID (`GET /episodes/991164451`)
+#### Example: Get Episodes by AniSora ID (`GET /episodes/800630028`)
 ```json
 {
-  "anisora_id": "991164451",
-  "title": "Bloody Bunny: The First Blood",
-  "total_episodes": 15,
+  "anisora_id": "800630028",
+  "title": "Black Clover Season 2",
+  "jname": "Black Clover 2nd Season",
+  "romaji": "Black Clover 2nd Season",
+  "total_episodes": 170,
   "episodes": [
     {
-      "episode_id": "991164451&ep=1",
+      "episode_id": "800630028&ep=1",
       "episode_number": 1,
-      "title": "Episode 1"
+      "title": "Episode 1 - Asta and Yuno",
+      "name": "Asta and Yuno",
+      "thumbnail": "https://img1.ak.crunchyroll.com/i/spire4-tmb/8a285ca29aadb33852da5f78d661afc91507016863_full.jpg",
+      "duration": "23m",
+      "url": "http://www.crunchyroll.com/watch/G6NVVXP8Y/asta-and-yuno",
+      "site": "Crunchyroll"
     },
     {
-      "episode_id": "991164451&ep=2",
-      "episode_number": 2,
-      "title": "Episode 2"
+      "episode_id": "800630028&ep=170",
+      "episode_number": 170,
+      "title": "Episode 170 - The Faraway Future",
+      "name": "The Faraway Future",
+      "thumbnail": "https://img1.ak.crunchyroll.com/i/spire1-tmb/c9f55b9c783014f912486c054c9358cf1617088983_full.jpg",
+      "duration": "23m",
+      "url": "http://www.crunchyroll.com/watch/GX9UQJQ54/the-faraway-future",
+      "site": "Crunchyroll"
     }
   ]
 }

@@ -637,8 +637,8 @@ export class CatalogService {
   }
 
   /**
-   * Get all episode IDs for an anime by anisora_id
-   * Formats each episode as: AnisoraId&ep=int
+   * Get all episode details for an anime by anisora_id
+   * Formats each episode as: AnisoraId&ep=int with thumbnail, name, duration, and title
    */
   async getAnimeEpisodes(idString: string) {
     let id: bigint;
@@ -655,6 +655,11 @@ export class CatalogService {
         title: true,
         episodes: true,
         type: true,
+        anilist_id: true,
+        picture: true,
+        thumbnail: true,
+        duration_value: true,
+        duration_unit: true,
         default_name: { select: { name: true, jname: true } },
       },
     });
@@ -666,13 +671,54 @@ export class CatalogService {
     const totalEpisodes = isMovie ? 1 : anime.episodes || 1;
     const englishTitle = anime.default_name?.name || anime.title;
     const jpName = anime.default_name?.jname || anime.title;
+    const animeDuration = formatDuration(anime.duration_value, anime.duration_unit);
+    const defaultThumbnail = anime.picture || anime.thumbnail || null;
+
+    // Fetch streaming episodes from AniList if anilist_id is present
+    let streamingEps: any[] = [];
+    if (anime.anilist_id) {
+      try {
+        streamingEps = await anilistService.getStreamingEpisodes(Number(anime.anilist_id));
+      } catch {
+        streamingEps = [];
+      }
+    }
+
+    // Index streaming episodes by parsed episode number
+    const epMap = new Map<number, { name: string; title: string; thumbnail?: string | null; url?: string | null; site?: string | null }>();
+
+    for (let idx = 0; idx < streamingEps.length; idx++) {
+      const ep = streamingEps[idx];
+      const parsed = this.parseEpisodeTitle(ep.title, idx + 1);
+      epMap.set(parsed.number, {
+        name: parsed.name,
+        title: parsed.title,
+        thumbnail: ep.thumbnail || defaultThumbnail,
+        url: ep.url ?? null,
+        site: ep.site ?? null,
+      });
+    }
+
+    // Determine count: max of DB episodes or highest episode found in streaming map
+    const maxEpNumber = epMap.size > 0 ? Math.max(...Array.from(epMap.keys())) : totalEpisodes;
+    const resolvedTotal = Math.max(totalEpisodes, maxEpNumber);
 
     const episodes = [];
-    for (let i = 1; i <= Math.min(totalEpisodes, 1500); i++) {
+    for (let i = 1; i <= Math.min(resolvedTotal, 1500); i++) {
+      const meta = epMap.get(i);
+      const epName = isMovie ? 'Full Movie' : (meta?.name || `Episode ${i}`);
+      const epTitle = isMovie ? 'Full Movie' : (meta?.title || `Episode ${i}`);
+      const epThumb = meta?.thumbnail || defaultThumbnail;
+
       episodes.push({
         episode_id: `${anisoraId}&ep=${i}`,
         episode_number: i,
-        title: isMovie ? 'Full Movie' : `Episode ${i}`,
+        title: epTitle,
+        name: epName,
+        thumbnail: epThumb,
+        duration: animeDuration,
+        url: meta?.url ?? null,
+        site: meta?.site ?? null,
       });
     }
 
@@ -681,8 +727,45 @@ export class CatalogService {
       title: englishTitle,
       jname: jpName,
       romaji: jpName,
-      total_episodes: anime.episodes,
+      total_episodes: resolvedTotal,
       episodes,
+    };
+  }
+
+  private parseEpisodeTitle(rawTitle?: string | null, fallbackEp = 1): { number: number; title: string; name: string } {
+    if (!rawTitle) {
+      return {
+        number: fallbackEp,
+        title: `Episode ${fallbackEp}`,
+        name: `Episode ${fallbackEp}`,
+      };
+    }
+
+    const match = rawTitle.match(/^Episode\s+(\d+)\s*[-:]\s*(.+)$/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const name = match[2].trim();
+      return {
+        number: num,
+        title: `Episode ${num} - ${name}`,
+        name,
+      };
+    }
+
+    const epOnlyMatch = rawTitle.match(/^Episode\s+(\d+)$/i);
+    if (epOnlyMatch) {
+      const num = parseInt(epOnlyMatch[1], 10);
+      return {
+        number: num,
+        title: `Episode ${num}`,
+        name: `Episode ${num}`,
+      };
+    }
+
+    return {
+      number: fallbackEp,
+      title: `Episode ${fallbackEp} - ${rawTitle.trim()}`,
+      name: rawTitle.trim(),
     };
   }
 }

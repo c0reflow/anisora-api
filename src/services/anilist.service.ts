@@ -222,6 +222,42 @@ export class AnilistService {
     anilistCache.set(cacheKey, mediaList, 1800); // 30 min cache
     return mediaList;
   }
+
+  /**
+   * Get streaming episodes from AniList (titles, thumbnails, urls)
+   * Cached for 2 hours
+   */
+  async getStreamingEpisodes(anilistId: number): Promise<AnilistStreamingEpisode[]> {
+    const cacheKey = `episodes:${anilistId}`;
+    const cached = anilistCache.get<AnilistStreamingEpisode[]>(cacheKey);
+    if (cached) return cached;
+
+    const query = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          id
+          streamingEpisodes {
+            title
+            thumbnail
+            url
+            site
+          }
+        }
+      }
+    `;
+
+    const data = await this.queryGraphQL<any>(query, { id: anilistId });
+    const list: AnilistStreamingEpisode[] = data?.Media?.streamingEpisodes || [];
+    anilistCache.set(cacheKey, list, 7200); // 2 hours
+    return list;
+  }
+}
+
+export interface AnilistStreamingEpisode {
+  title?: string | null;
+  thumbnail?: string | null;
+  url?: string | null;
+  site?: string | null;
 }
 
 export interface AnilistSpotlightMedia {
@@ -252,3 +288,4 @@ export interface AnilistSpotlightMedia {
 }
 
 export const anilistService = new AnilistService();
+

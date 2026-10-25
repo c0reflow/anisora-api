@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model anime {
+  anisora_id                                                BigInt            @id(map: "pk_anime")
+  hianime_id                                                String?           @db.VarChar(191)
+  miruro_id                                                 String?           @unique(map: "uq_miruro_id") @db.VarChar(191)
+  anilist_id                                                BigInt?           @unique(map: "uq_anilist_id")
+  mal_id                                                    BigInt?           @unique(map: "uq_mal_id")
+  animeplanet_id                                            String?           @unique(map: "uq_anime_planet_id") @db.VarChar(255)
+  animecountdown_id                                         BigInt?           @unique(map: "uq_anime_countdown_id")
+  kitsu_id                                                  BigInt?           @unique(map: "uq_kitsu_id")
+  anidb_id                                                  BigInt?           @unique(map: "uq_anidb_id")
+  anisearch_id                                              BigInt?           @unique(map: "uq_anisearch_id")
+  simkl_id                                                  BigInt?           @unique(map: "uq_simkl_id")
+  livechart_id                                              BigInt?           @unique(map: "uq_livechart_id")
+  animenewsnetwork_id                                       BigInt?           @unique(map: "uq_ann_id")
+  title                                                     String            @db.VarChar(500)
+  type                                                      String            @db.VarChar(30)
+  episodes                                                  Int?
+  status                                                    String            @db.VarChar(30)
+  season                                                    String?           @db.VarChar(20)
+  season_year                                               Int?              @db.SmallInt
+  picture                                                   String?
+  thumbnail                                                 String?
+  duration_value                                            Decimal?          @db.Decimal(12, 4)
+  duration_unit                                             String?           @db.VarChar(20)
+  score_agm                                                 Decimal?          @db.Decimal(18, 15)
+  score_mean                                                Decimal?          @db.Decimal(18, 15)
+  score_median                                              Decimal?          @db.Decimal(18, 15)
+  sources                                                   Json
+  anime_producers                                           anime_producers[]
+  anime_relations_anime_relations_anisora_idToanime         anime_relations[] @relation("anime_relations_anisora_idToanime")
+  anime_relations_anime_relations_related_anisora_idToanime anime_relations[] @relation("anime_relations_related_anisora_idToanime")
+  anime_studios                                             anime_studios[]
+  anime_synonyms                                            anime_synonyms[]
+  anime_tags                                                anime_tags[]
+
+  @@index([hianime_id], map: "idx_anime_hianime_id")
+  @@index([season_year, season], map: "idx_anime_season")
+  @@index([title], map: "idx_anime_title")
+  @@index([type, status], map: "idx_anime_type_status")
+}
+
+model anime_producers {
+  anisora_id BigInt
+  producer   String @db.VarChar(255)
+  anime      anime  @relation(fields: [anisora_id], references: [anisora_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_producers_anime")
+
+  @@id([anisora_id, producer], map: "pk_anime_producers")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model anime_relations {
+  anisora_id                                      BigInt
+  related_anisora_id                              BigInt
+  anime_anime_relations_anisora_idToanime         anime  @relation("anime_relations_anisora_idToanime", fields: [anisora_id], references: [anisora_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_relations_anime")
+  anime_anime_relations_related_anisora_idToanime anime  @relation("anime_relations_related_anisora_idToanime", fields: [related_anisora_id], references: [anisora_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_relations_related")
+
+  @@id([anisora_id, related_anisora_id], map: "pk_anime_relations")
+}
+
+model anime_studios {
+  anisora_id BigInt
+  studio     String @db.VarChar(255)
+  anime      anime  @relation(fields: [anisora_id], references: [anisora_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_studios_anime")
+
+  @@id([anisora_id, studio], map: "pk_anime_studios")
+}
+
+model anime_synonyms {
+  anisora_id BigInt
+  synonym    String @db.VarChar(500)
+  anime      anime  @relation(fields: [anisora_id], references: [anisora_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_synonyms_anime")
+
+  @@id([anisora_id, synonym], map: "pk_anime_synonyms")
+}
+
+model anime_tags {
+  anisora_id BigInt
+  tag        String @db.VarChar(150)
+  anime      anime  @relation(fields: [anisora_id], references: [anisora_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tags_anime")
+
+  @@id([anisora_id, tag], map: "pk_anime_tags")
+}

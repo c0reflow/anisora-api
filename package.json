@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc",
+    "postinstall": "prisma generate",
     "start": "node dist/server.js",
+    "proxy": "node proxy/server.js",
+    "proxy:dev": "node --watch proxy/server.js",
+    "proxy:test": "node proxy/test-proxy.js",
     "test": "tsx test-api.ts",
     "prisma:generate": "prisma generate",
     "prisma:pull": "prisma db pull",
@@ -37,13 +41,16 @@
     "@fastify/cors": "^11.3.1",
     "@fastify/helmet": "^13.2.0",
     "@fastify/rate-limit": "^11.2.1",
+    "@fastify/static": "^10.1.7",
     "@fastify/swagger": "^9.9.2",
     "@fastify/swagger-ui": "^6.1.2",
     "@fastify/type-provider-typebox": "^6.3.0",
     "@fastify/websocket": "^11.3.4",
     "@prisma/client": "^6.19.3",
     "@sinclair/typebox": "^0.34.52",
+    "cheerio": "^1.2.0",
     "dotenv": "^18.0.9",
-    "fastify": "^5.12.7"
+    "fastify": "^5.12.7",
+    "video.js": "^10.2.0"
   }
 }

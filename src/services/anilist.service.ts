@@ -1,241 +1,266 @@
-/**
- * AniList GraphQL Client with in-memory caching and timeout fallbacks
- */
-
-interface CacheEntry<T> {
-  data: T;
-  expiresAt: number;
-}
-
-class MemoryCache {
-  private cache = new Map<string, CacheEntry<any>>();
-
-  get<T>(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    if (Date.now() > entry.expiresAt) {
-      this.cache.delete(key);
-      return null;
-    }
-    return entry.data;
-  }
-
-  set<T>(key: string, data: T, ttlSeconds: number): void {
-    this.cache.set(key, {
-      data,
-      expiresAt: Date.now() + ttlSeconds * 1000,
-    });
-  }
-}
-
-export const anilistCache = new MemoryCache();
-
-const ANILIST_GRAPHQL_ENDPOINT = 'https://graphql.anilist.co';
-
-export interface AiringItem {
-  anilistId: number;
-  episode: number;
-  airingAt: number;
-}
-
-export interface ScheduleItem {
-  anilistId: number;
-  episode: number;
-  airingAt: number;
-  title: string;
-}
+import { prisma } from '../db/prisma';
 
 export class AnilistService {
-  /**
-   * Helper to execute GraphQL queries with 5s timeout
-   */
-  private async queryGraphQL<T>(query: string, variables: Record<string, any>): Promise<T | null> {
-    try {
-      const response = await fetch(ANILIST_GRAPHQL_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ query, variables }),
-        signal: AbortSignal.timeout(5000),
-      });
+  private static readonly GRAPHQL_ENDPOINT = 'https://graphql.anilist.co';
 
-      if (!response.ok) {
-        return null;
-      }
+  private static async executeQuery(query: string, variables: Record<string, any>) {
+    const res = await fetch(this.GRAPHQL_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AniSora/1.0',
+      },
+      body: JSON.stringify({ query, variables }),
+    });
 
-      const json: any = await response.json();
-      return json.data as T;
-    } catch (err) {
-      // Graceful fallback on network timeout or rate limits
-      return null;
+    if (!res.ok) {
+      throw new Error(`AniList API error: ${res.status} ${res.statusText}`);
     }
+
+    const json = (await res.json()) as any;
+    if (json.errors && json.errors.length > 0) {
+      throw new Error(json.errors[0]?.message || 'Unknown AniList GraphQL error');
+    }
+
+    return json.data;
   }
 
   /**
-   * Get trending anime AniList IDs (Cached for 30 minutes)
+   * Resolves anilist_id from anisora_id
    */
-  async getTrendingAnilistIds(page = 1, perPage = 20): Promise<number[]> {
-    const cacheKey = `trending:${page}:${perPage}`;
-    const cached = anilistCache.get<number[]>(cacheKey);
-    if (cached) return cached;
+  static async getAnilistId(anisoraIdInput: string | number | bigint): Promise<number | null> {
+    const idBig = BigInt(anisoraIdInput);
+    const row = await prisma.anime.findUnique({
+      where: { anisora_id: idBig },
+      select: { anilist_id: true, title: true, default_name: { select: { name: true } } },
+    });
 
+    if (!row) return null;
+    if (row.anilist_id) return Number(row.anilist_id);
+
+    // If anilist_id is not mapped in DB, search by title on AniList
+    const titleToSearch = row.default_name?.name || row.title;
+    if (titleToSearch) {
+      const searchData = await this.searchAnimeByTitle(titleToSearch);
+      if (searchData && searchData.id) {
+        // Cache it in background
+        await prisma.anime.update({
+          where: { anisora_id: idBig },
+          data: { anilist_id: BigInt(searchData.id) },
+        }).catch(() => {});
+        return searchData.id;
+      }
+    }
+
+    return null;
+  }
+
+  private static async searchAnimeByTitle(title: string): Promise<{ id: number } | null> {
     const query = `
-      query ($page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
-          media(sort: TRENDING_DESC, type: ANIME) {
-            id
-          }
+      query ($search: String) {
+        Media(search: $search, type: ANIME) {
+          id
         }
       }
     `;
-
-    const data = await this.queryGraphQL<any>(query, { page, perPage });
-    if (!data?.Page?.media) return [];
-
-    const ids: number[] = data.Page.media.map((m: any) => m.id);
-    anilistCache.set(cacheKey, ids, 1800); // 30 min cache
-    return ids;
+    const data = await this.executeQuery(query, { search: title }).catch(() => null);
+    return data?.Media || null;
   }
 
   /**
-   * Get latest released episodes from AniList (Cached for 5 minutes)
+   * Fetches complete media details from AniList by Anisora ID
    */
-  async getLatestAiringEpisodes(page = 1, perPage = 20): Promise<AiringItem[]> {
-    const cacheKey = `latest-airing:${page}:${perPage}`;
-    const cached = anilistCache.get<AiringItem[]>(cacheKey);
-    if (cached) return cached;
-
-    const query = `
-      query ($page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
-          airingSchedules(notYetAired: false, sort: TIME_DESC) {
-            episode
-            airingAt
-            media {
-              id
-            }
-          }
-        }
-      }
-    `;
-
-    const data = await this.queryGraphQL<any>(query, { page, perPage });
-    if (!data?.Page?.airingSchedules) return [];
-
-    const list: AiringItem[] = data.Page.airingSchedules.map((s: any) => ({
-      anilistId: s.media.id,
-      episode: s.episode,
-      airingAt: s.airingAt,
-    }));
-
-    anilistCache.set(cacheKey, list, 300); // 5 min cache
-    return list;
-  }
-
-  /**
-   * Get estimated airing schedule for a given day range (Cached for 1 hour)
-   */
-  async getSchedule(startUnix: number, endUnix: number): Promise<ScheduleItem[]> {
-    const cacheKey = `schedule:${startUnix}:${endUnix}`;
-    const cached = anilistCache.get<ScheduleItem[]>(cacheKey);
-    if (cached) return cached;
-
-    const query = `
-      query ($start: Int, $end: Int) {
-        Page(page: 1, perPage: 50) {
-          airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME) {
-            episode
-            airingAt
-            media {
-              id
-              title {
-                romaji
-                english
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    const data = await this.queryGraphQL<any>(query, { start: startUnix, end: endUnix });
-    if (!data?.Page?.airingSchedules) return [];
-
-    const list: ScheduleItem[] = data.Page.airingSchedules.map((s: any) => ({
-      anilistId: s.media.id,
-      episode: s.episode,
-      airingAt: s.airingAt,
-      title: s.media.title?.english || s.media.title?.romaji || 'Unknown Title',
-    }));
-
-    anilistCache.set(cacheKey, list, 3600); // 1 hour cache
-    return list;
-  }
-
-  /**
-   * Get top spotlight anime with banner images, descriptions, dates and genres from AniList
-   */
-  async getSpotlightMedia(limit = 15): Promise<AnilistSpotlightMedia[]> {
-    const cacheKey = `spotlight:${limit}`;
-    const cached = anilistCache.get<AnilistSpotlightMedia[]>(cacheKey);
-    if (cached) return cached;
-
-    const query = `
-      query ($page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
-          media(sort: [TRENDING_DESC, POPULARITY_DESC], type: ANIME) {
-            id
-            title {
-              romaji
-              english
-              native
-            }
-            bannerImage
-            coverImage {
-              extraLarge
-              large
-            }
-            description(asHtml: false)
-            format
-            episodes
-            nextAiringEpisode {
-              episode
-            }
-            startDate {
-              year
-              month
-              day
-            }
-            genres
-            averageScore
-          }
-        }
-      }
-    `;
-
-    const data = await this.queryGraphQL<any>(query, { page: 1, perPage: limit });
-    if (!data?.Page?.media) return [];
-
-    const mediaList: AnilistSpotlightMedia[] = data.Page.media;
-    anilistCache.set(cacheKey, mediaList, 1800); // 30 min cache
-    return mediaList;
-  }
-
-  /**
-   * Get streaming episodes from AniList (titles, thumbnails, urls)
-   * Cached for 2 hours
-   */
-  async getStreamingEpisodes(anilistId: number): Promise<AnilistStreamingEpisode[]> {
-    const cacheKey = `episodes:${anilistId}`;
-    const cached = anilistCache.get<AnilistStreamingEpisode[]>(cacheKey);
-    if (cached) return cached;
+  static async getAnimeDetails(anisoraId: string | number | bigint) {
+    const anilistId = await this.getAnilistId(anisoraId);
+    if (!anilistId) {
+      throw new Error(`No AniList entry found for Anisora ID ${anisoraId}`);
+    }
 
     const query = `
       query ($id: Int) {
         Media(id: $id, type: ANIME) {
           id
+          idMal
+          title {
+            romaji
+            english
+            native
+            userPreferred
+          }
+          type
+          format
+          status
+          description(asHtml: false)
+          startDate {
+            year
+            month
+            day
+          }
+          endDate {
+            year
+            month
+            day
+          }
+          season
+          seasonYear
+          seasonInt
+          episodes
+          duration
+          countryOfOrigin
+          isLicensed
+          source
+          hashtag
+          trailer {
+            id
+            site
+            thumbnail
+          }
+          coverImage {
+            extraLarge
+            large
+            medium
+            color
+          }
+          bannerImage
+          genres
+          synonyms
+          averageScore
+          meanScore
+          popularity
+          trending
+          favourites
+          tags {
+            id
+            name
+            description
+            category
+            rank
+            isGeneralSpoiler
+            isMediaSpoiler
+            isAdult
+          }
+          studios {
+            edges {
+              isMain
+              node {
+                id
+                name
+                isAnimationStudio
+              }
+            }
+          }
+          nextAiringEpisode {
+            airingAt
+            timeUntilAiring
+            episode
+          }
+          characters(perPage: 12, sort: [ROLE, RELEVANCE]) {
+            edges {
+              role
+              node {
+                id
+                name {
+                  full
+                  native
+                }
+                image {
+                  large
+                  medium
+                }
+              }
+              voiceActors(language: JAPANESE) {
+                id
+                name {
+                  full
+                  native
+                }
+                image {
+                  large
+                }
+                languageV2
+              }
+            }
+          }
+          relations {
+            edges {
+              relationType
+              node {
+                id
+                title {
+                  userPreferred
+                  english
+                }
+                format
+                type
+                status
+                coverImage {
+                  large
+                }
+              }
+            }
+          }
+          recommendations(perPage: 10, sort: [RATING_DESC]) {
+            nodes {
+              mediaRecommendation {
+                id
+                title {
+                  userPreferred
+                  english
+                }
+                format
+                type
+                status
+                coverImage {
+                  large
+                }
+                averageScore
+              }
+            }
+          }
+          externalLinks {
+            id
+            url
+            site
+            type
+            icon
+            color
+          }
+          siteUrl
+        }
+      }
+    `;
+
+    const data = await this.executeQuery(query, { id: anilistId });
+    return {
+      anisora_id: anisoraId.toString(),
+      anilist_id: anilistId,
+      media: data?.Media || null,
+    };
+  }
+
+  /**
+   * Fetches all episodes of that anime including title, thumbnail, number
+   */
+  static async getEpisodes(anisoraId: string | number | bigint) {
+    const anilistId = await this.getAnilistId(anisoraId);
+    if (!anilistId) {
+      throw new Error(`No AniList entry found for Anisora ID ${anisoraId}`);
+    }
+
+    const query = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          id
+          title {
+            userPreferred
+            english
+            romaji
+          }
+          episodes
+          coverImage {
+            large
+          }
           streamingEpisodes {
             title
             thumbnail
@@ -246,46 +271,34 @@ export class AnilistService {
       }
     `;
 
-    const data = await this.queryGraphQL<any>(query, { id: anilistId });
-    const list: AnilistStreamingEpisode[] = data?.Media?.streamingEpisodes || [];
-    anilistCache.set(cacheKey, list, 7200); // 2 hours
-    return list;
+    const data = await this.executeQuery(query, { id: anilistId });
+    const media = data?.Media;
+    const streamEps = media?.streamingEpisodes || [];
+
+    // Parse episode number from title (e.g. "Episode 1 - The Beginning")
+    const formattedEpisodes = streamEps.map((ep: any, idx: number) => {
+      let epNumber: number | null = idx + 1;
+      const match = ep.title ? ep.title.match(/(?:Episode|Ep\.?|E)\s*(\d+)/i) : null;
+      if (match) {
+        epNumber = parseInt(match[1], 10);
+      }
+
+      return {
+        number: epNumber,
+        title: ep.title || `Episode ${epNumber}`,
+        thumbnail: ep.thumbnail || media.coverImage?.large || null,
+        url: ep.url || null,
+        site: ep.site || null,
+      };
+    });
+
+    return {
+      anisora_id: anisoraId.toString(),
+      anilist_id: anilistId,
+      total_episodes: media?.episodes || formattedEpisodes.length,
+      count: formattedEpisodes.length,
+      episodes: formattedEpisodes,
+    };
   }
 }
-
-export interface AnilistStreamingEpisode {
-  title?: string | null;
-  thumbnail?: string | null;
-  url?: string | null;
-  site?: string | null;
-}
-
-export interface AnilistSpotlightMedia {
-  id: number;
-  title: {
-    romaji?: string | null;
-    english?: string | null;
-    native?: string | null;
-  };
-  bannerImage?: string | null;
-  coverImage?: {
-    extraLarge?: string | null;
-    large?: string | null;
-  } | null;
-  description?: string | null;
-  format?: string | null;
-  episodes?: number | null;
-  nextAiringEpisode?: {
-    episode: number;
-  } | null;
-  startDate?: {
-    year?: number | null;
-    month?: number | null;
-    day?: number | null;
-  } | null;
-  genres?: string[] | null;
-  averageScore?: number | null;
-}
-
-export const anilistService = new AnilistService();
 

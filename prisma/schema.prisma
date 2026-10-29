@@ -8,39 +8,39 @@ datasource db {
 }
 
 model anime {
-  anisora_id                                                BigInt            @id(map: "pk_anime")
-  hianime_id                                                String?           @db.VarChar(191)
-  miruro_id                                                 String?           @unique(map: "uq_miruro_id") @db.VarChar(191)
-  anilist_id                                                BigInt?           @unique(map: "uq_anilist_id")
-  mal_id                                                    BigInt?           @unique(map: "uq_mal_id")
-  animeplanet_id                                            String?           @unique(map: "uq_anime_planet_id") @db.VarChar(255)
-  animecountdown_id                                         BigInt?           @unique(map: "uq_anime_countdown_id")
-  kitsu_id                                                  BigInt?           @unique(map: "uq_kitsu_id")
-  anidb_id                                                  BigInt?           @unique(map: "uq_anidb_id")
-  anisearch_id                                              BigInt?           @unique(map: "uq_anisearch_id")
-  simkl_id                                                  BigInt?           @unique(map: "uq_simkl_id")
-  livechart_id                                              BigInt?           @unique(map: "uq_livechart_id")
-  animenewsnetwork_id                                       BigInt?           @unique(map: "uq_ann_id")
-  title                                                     String            @db.VarChar(500)
-  type                                                      String            @db.VarChar(30)
+  anisora_id                                                BigInt              @id(map: "pk_anime")
+  hianime_id                                                String?             @db.VarChar(191)
+  anilist_id                                                BigInt?             @unique(map: "uq_anilist_id")
+  mal_id                                                    BigInt?             @unique(map: "uq_mal_id")
+  animeplanet_id                                            String?             @unique(map: "uq_anime_planet_id") @db.VarChar(255)
+  animecountdown_id                                         BigInt?             @unique(map: "uq_anime_countdown_id")
+  kitsu_id                                                  BigInt?             @unique(map: "uq_kitsu_id")
+  anidb_id                                                  BigInt?             @unique(map: "uq_anidb_id")
+  anisearch_id                                              BigInt?             @unique(map: "uq_anisearch_id")
+  simkl_id                                                  BigInt?             @unique(map: "uq_simkl_id")
+  livechart_id                                              BigInt?             @unique(map: "uq_livechart_id")
+  animenewsnetwork_id                                       BigInt?             @unique(map: "uq_ann_id")
+  title                                                     String              @db.VarChar(500)
+  type                                                      String              @db.VarChar(30)
   episodes                                                  Int?
-  status                                                    String            @db.VarChar(30)
-  season                                                    String?           @db.VarChar(20)
-  season_year                                               Int?              @db.SmallInt
+  status                                                    String              @db.VarChar(30)
+  season                                                    String?             @db.VarChar(20)
+  season_year                                               Int?                @db.SmallInt
   picture                                                   String?
   thumbnail                                                 String?
-  duration_value                                            Decimal?          @db.Decimal(12, 4)
-  duration_unit                                             String?           @db.VarChar(20)
-  score_agm                                                 Decimal?          @db.Decimal(18, 15)
-  score_mean                                                Decimal?          @db.Decimal(18, 15)
-  score_median                                              Decimal?          @db.Decimal(18, 15)
+  duration_value                                            Decimal?            @db.Decimal(12, 4)
+  duration_unit                                             String?             @db.VarChar(20)
+  score_agm                                                 Decimal?            @db.Decimal(18, 15)
+  score_mean                                                Decimal?            @db.Decimal(18, 15)
+  score_median                                              Decimal?            @db.Decimal(18, 15)
   sources                                                   Json
-  views                                                     BigInt            @default(0)
-  likes                                                     BigInt            @default(0)
+  views                                                     BigInt              @default(0)
+  likes                                                     BigInt              @default(0)
   description                                               String?
+  mal_metadata                                              anime_mal_metadata?
   anime_producers                                           anime_producers[]
-  anime_relations_anime_relations_anisora_idToanime         anime_relations[] @relation("anime_relations_anisora_idToanime")
-  anime_relations_anime_relations_related_anisora_idToanime anime_relations[] @relation("anime_relations_related_anisora_idToanime")
+  anime_relations_anime_relations_anisora_idToanime         anime_relations[]   @relation("anime_relations_anisora_idToanime")
+  anime_relations_anime_relations_related_anisora_idToanime anime_relations[]   @relation("anime_relations_related_anisora_idToanime")
   anime_studios                                             anime_studios[]
   anime_synonyms                                            anime_synonyms[]
   anime_tags                                                anime_tags[]
@@ -176,6 +176,7 @@ model users {
   created_at        DateTime         @default(now()) @db.Timestamptz(6)
   updated_at        DateTime         @default(now()) @db.Timestamptz(6)
   anime_comments    anime_comments[]
+  api_keys          api_keys[]
   user_sessions     user_sessions[]
 }
 
@@ -195,4 +196,200 @@ model default_name {
   @@index([hianime_id], map: "idx_default_name_hianime_id")
   @@index([name], map: "idx_default_name_name")
   @@index([jname], map: "idx_default_name_jname")
+}
+
+model anime_mal_metadata {
+  anisora_id         BigInt    @id
+  mal_id             BigInt?   @unique
+  title_english      String?   @db.VarChar(500)
+  title_romaji       String?   @db.VarChar(500)
+  title_japanese     String?   @db.VarChar(500)
+  synonyms           Json?
+  type               String?   @db.VarChar(50)
+  source             String?   @db.VarChar(100)
+  episodes           Int?
+  status             String?   @db.VarChar(50)
+  airing             Boolean?  @default(false)
+  aired_string       String?   @db.VarChar(255)
+  duration           String?   @db.VarChar(100)
+  rating             String?   @db.VarChar(100)
+  score              Decimal?  @db.Decimal(5, 2)
+  scored_by          Int?
+  rank               Int?
+  popularity         Int?
+  members            Int?
+  favorites          Int?
+  synopsis           String?
+  background         String?
+  season             String?   @db.VarChar(30)
+  year               Int?
+  broadcast          String?   @db.VarChar(255)
+  producers          Json?
+  licensors          Json?
+  studios            Json?
+  genres             Json?
+  themes             Json?
+  demographics       Json?
+  trailer_url        String?
+  trailer_youtube_id String?   @db.VarChar(100)
+  trailer_embed_url  String?
+  characters         Json?
+  staff              Json?
+  relations          Json?
+  recommendations    Json?
+  episodes_list      Json?
+  external_links     Json?
+  last_synced_at     DateTime? @default(now()) @db.Timestamptz(6)
+  anilist_id         BigInt?
+  anime              anime     @relation(fields: [anisora_id], references: [anisora_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([mal_id], map: "idx_mal_metadata_mal_id")
+  @@index([anilist_id], map: "idx_mal_metadata_anilist_id")
+}
+
+model stream_sessions {
+  id               String   @id @db.VarChar(64)
+  numeric_id       BigInt   @default(autoincrement())
+  streaming_domain String?  @db.VarChar(255)
+  streaming_url    String
+  headers          Json?
+  server           String?  @db.VarChar(50)
+  anime_id         String?  @db.VarChar(100)
+  episode          Int?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  expires_at       DateTime @db.Timestamptz(6)
+
+  @@index([expires_at], map: "idx_stream_sessions_expires_at")
+}
+
+model anime_episodes {
+  id             BigInt    @id @default(autoincrement())
+  anisora_id     BigInt
+  mal_id         BigInt?
+  episode_number Int
+  title          String?   @db.VarChar(500)
+  japanese_title String?   @db.VarChar(500)
+  aired_date     String?   @db.VarChar(100)
+  mal_url        String?
+  forum_url      String?
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([anisora_id, episode_number], map: "uq_anime_episode")
+  @@index([anisora_id], map: "idx_anime_episodes_anisora")
+  @@index([mal_id], map: "idx_anime_episodes_mal")
+}
+
+model api_keys {
+  id                    BigInt    @id @default(autoincrement())
+  user_id               String?   @db.Uuid
+  name                  String    @db.VarChar(100)
+  key_hash              String    @unique(map: "api_keys_key_hash_unique") @db.VarChar(64)
+  prefix                String    @db.VarChar(16)
+  rate_limit_per_minute Int       @default(60)
+  permissions           Json?     @db.Json
+  last_used_at          DateTime? @db.Timestamp(0)
+  expires_at            DateTime? @db.Timestamp(0)
+  is_active             Boolean   @default(true)
+  created_at            DateTime? @db.Timestamp(0)
+  updated_at            DateTime? @db.Timestamp(0)
+  users                 users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "api_keys_user_id_foreign")
+
+  @@index([expires_at], map: "api_keys_expires_at_index")
+  @@index([is_active], map: "api_keys_is_active_index")
+  @@index([prefix], map: "api_keys_prefix_index")
+  @@index([user_id], map: "api_keys_user_id_index")
+}
+
+model cache {
+  key        String @id @db.VarChar(255)
+  value      String
+  expiration BigInt
+
+  @@index([expiration], map: "cache_expiration_index")
+}
+
+model cache_locks {
+  key        String @id @db.VarChar(255)
+  owner      String @db.VarChar(255)
+  expiration BigInt
+
+  @@index([expiration], map: "cache_locks_expiration_index")
+}
+
+model failed_jobs {
+  id         BigInt   @id @default(autoincrement())
+  uuid       String   @unique(map: "failed_jobs_uuid_unique") @db.VarChar(255)
+  connection String   @db.VarChar(255)
+  queue      String   @db.VarChar(255)
+  payload    String
+  exception  String
+  failed_at  DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([connection, queue, failed_at], map: "failed_jobs_connection_queue_failed_at_index")
+}
+
+model job_batches {
+  id             String  @id @db.VarChar(255)
+  name           String  @db.VarChar(255)
+  total_jobs     Int
+  pending_jobs   Int
+  failed_jobs    Int
+  failed_job_ids String
+  options        String?
+  cancelled_at   Int?
+  created_at     Int
+  finished_at    Int?
+}
+
+model jobs {
+  id           BigInt @id @default(autoincrement())
+  queue        String @db.VarChar(255)
+  payload      String
+  attempts     Int    @db.SmallInt
+  reserved_at  Int?
+  available_at Int
+  created_at   Int
+
+  @@index([queue], map: "jobs_queue_index")
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement())
+  migration String @db.VarChar(255)
+  batch     Int
+}
+
+model password_reset_tokens {
+  email      String    @id @db.VarChar(255)
+  token      String    @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+}
+
+model personal_access_tokens {
+  id             BigInt    @id @default(autoincrement())
+  tokenable_type String    @db.VarChar(255)
+  tokenable_id   String    @db.VarChar(255)
+  name           String
+  token          String    @unique(map: "personal_access_tokens_token_unique") @db.VarChar(64)
+  abilities      String?
+  last_used_at   DateTime? @db.Timestamp(0)
+  expires_at     DateTime? @db.Timestamp(0)
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
+
+  @@index([expires_at], map: "personal_access_tokens_expires_at_index")
+  @@index([tokenable_type, tokenable_id], map: "personal_access_tokens_tokenable_type_tokenable_id_index")
+}
+
+model sessions {
+  id            String  @id @db.VarChar(255)
+  user_id       String? @db.VarChar(36)
+  ip_address    String? @db.VarChar(45)
+  user_agent    String?
+  payload       String
+  last_activity Int
+
+  @@index([last_activity], map: "sessions_last_activity_index")
+  @@index([user_id], map: "sessions_user_id_index")
 }

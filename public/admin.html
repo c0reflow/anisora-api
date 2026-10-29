@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AniSora Admin Panel - Home Sections Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card-bg: #151922;
+      --card-border: #232936;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --accent: #ec4899;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      font-size: 24px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a855f7, #6366f1, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge {
+      font-size: 11px;
+      background: #312e81;
+      color: #c7d2fe;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .api-key-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .api-key-box input {
+      background: #11141c;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #fff;
+      padding: 8px 12px;
+      font-size: 13px;
+      width: 220px;
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    select, input, button {
+      width: 100%;
+      background: #0d1017;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    .id-search-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #232936;
+      color: #e5e7eb;
+    }
+
+    .btn-secondary:hover {
+      background: #2f3747;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    /* Anime Preview Card */
+    .preview-card {
+      margin-top: 16px;
+      background: #0d1017;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 14px;
+      display: none;
+    }
+
+    .preview-card.active {
+      display: block;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .preview-header {
+      display: flex;
+      gap: 12px;
+    }
+
+    .preview-poster {
+      width: 70px;
+      height: 98px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #1f2430;
+    }
+
+    .preview-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .preview-title {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .preview-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .preview-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag-pill {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #232936;
+      color: #c7d2fe;
+    }
+
+    /* Section Items List */
+    .section-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-counter {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .anime-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 200px;
+    }
+
+    .anime-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #0d1017;
+      border: 1px solid var(--card-border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      cursor: grab;
+    }
+
+    .anime-item:active {
+      cursor: grabbing;
+    }
+
+    .anime-item.dragging {
+      opacity: 0.4;
+      border-color: var(--primary);
+    }
+
+    .item-rank {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-muted);
+      width: 28px;
+      text-align: center;
+    }
+
+    .item-img {
+      width: 44px;
+      height: 60px;
+      border-radius: 5px;
+      object-fit: cover;
+      background: #1f2430;
+      flex-shrink: 0;
+    }
+
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-title {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .item-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 8px;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .order-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 6px;
+      background: #1e2430;
+      color: #9ca3af;
+      font-size: 14px;
+    }
+
+    .order-btn:hover {
+      background: #2a3344;
+      color: #fff;
+    }
+
+    .delete-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 6px;
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .delete-btn:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1f2937;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid #374151;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 9999;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>AniSora</h1>
+        <span class="badge">Home Manager</span>
+      </div>
+      <div class="api-key-box">
+        <input type="password" id="adminKeyInput" placeholder="Admin Secret Key" value="anisora_admin_secret_key_2026">
+      </div>
+    </header>
+
+    <div class="grid-layout">
+      <!-- Left Panel: Add anime by ID -->
+      <div class="panel">
+        <h2 class="panel-title">Add Anime to Section</h2>
+
+        <div class="form-group">
+          <label for="sectionSelect">Target Section</label>
+          <select id="sectionSelect">
+            <option value="spotlight">⭐ Spotlight (Slider)</option>
+            <option value="trending">🔥 Trending Now</option>
+            <option value="top_airing">📡 Top Airing</option>
+            <option value="most_popular">👑 Most Popular</option>
+            <option value="most_favorite">💖 Most Favorite</option>
+            <option value="latest_completed">✅ Latest Completed</option>
+            <option value="latest_episodes">📺 Latest Episodes</option>
+            <option value="new_on_anisora">✨ New on AniSora</option>
+            <option value="top_upcoming">🚀 Top Upcoming</option>
+            <option value="this_season">🌸 This Season</option>
+            <option value="next_season">🍁 Next Season</option>
+            <option value="popular_movies">🍿 Popular Movies</option>
+            <option value="popular_series">🎬 Popular Series</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="anisoraIdInput">Anisora ID</label>
+          <div class="id-search-row">
+            <input type="text" id="anisoraIdInput" placeholder="e.g. 148201942 or 513684003">
+            <button class="btn btn-secondary" id="lookupBtn" style="width: 100px;">Lookup</button>
+          </div>
+          <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">
+            All metadata (title, poster, score, episodes, tags) is fetched automatically from DB.
+          </small>
+        </div>
+
+        <!-- Position Placement Option -->
+        <div class="form-group">
+          <label for="positionSelect">Insert Position</label>
+          <select id="positionSelect">
+            <option value="0">At Top / #1 (Recommended)</option>
+            <option value="-1">At Bottom / End</option>
+          </select>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="preview-card" id="previewCard">
+          <div class="preview-header">
+            <img src="" alt="" class="preview-poster" id="previewImg">
+            <div class="preview-details">
+              <div class="preview-title" id="previewTitle">-</div>
+              <div class="preview-sub" id="previewSub">-</div>
+              <div class="preview-tags" id="previewTags"></div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="addConfirmBtn" style="margin-top: 12px; width: 100%;">
+            + Add to Section
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Panel: Section Reordering & Management -->
+      <div class="panel">
+        <div class="section-header-bar">
+          <div>
+            <h2 class="panel-title" id="currentSectionTitle" style="margin-bottom: 2px;">Spotlight Animes</h2>
+            <span class="section-counter" id="itemCounter">0 items</span>
+          </div>
+          <button class="btn btn-secondary" id="saveOrderBtn" style="width: auto; padding: 8px 16px;">
+            💾 Save Ordering
+          </button>
+        </div>
+
+        <div class="anime-list" id="animeList">
+          <div style="color: var(--text-muted); text-align: center; padding: 40px 0;">Loading section...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Message</div>
+
+  <script>
+    const sectionSelect = document.getElementById('sectionSelect');
+    const anisoraIdInput = document.getElementById('anisoraIdInput');
+    const lookupBtn = document.getElementById('lookupBtn');
+    const previewCard = document.getElementById('previewCard');
+    const previewImg = document.getElementById('previewImg');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewSub = document.getElementById('previewSub');
+    const previewTags = document.getElementById('previewTags');
+    const addConfirmBtn = document.getElementById('addConfirmBtn');
+    const currentSectionTitle = document.getElementById('currentSectionTitle');
+    const itemCounter = document.getElementById('itemCounter');
+    const animeList = document.getElementById('animeList');
+    const saveOrderBtn = document.getElementById('saveOrderBtn');
+    const positionSelect = document.getElementById('positionSelect');
+    const adminKeyInput = document.getElementById('adminKeyInput');
+    const toast = document.getElementById('toast');
+
+    let currentItems = [];
+    let lookedUpAnime = null;
+
+    function showToast(msg) {
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function getHeaders(includeContentType = true) {
+      const headers = {
+        'x-admin-key': adminKeyInput.value.trim()
+      };
+      if (includeContentType) {
+        headers['Content-Type'] = 'application/json';
+      }
+      return headers;
+    }
+
+    async function loadSection(section) {
+      currentSectionTitle.innerText = section.replace(/_/g, ' ').toUpperCase();
+      animeList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px 0;">Loading section...</div>';
+
+      try {
+        const res = await fetch(`/api/v1/admin/section/${section}`);
+        const data = await res.json();
+        if (data.success) {
+          currentItems = data.items || [];
+          renderList();
+        } else {
+          animeList.innerHTML = `<div style="color: var(--danger); text-align: center;">${data.error}</div>`;
+        }
+      } catch (err) {
+        animeList.innerHTML = `<div style="color: var(--danger); text-align: center;">Error loading section: ${err.message}</div>`;
+      }
+    }
+
+    function renderList() {
+      itemCounter.innerText = `${currentItems.length} items`;
+      if (currentItems.length === 0) {
+        animeList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px 0;">No animes in this section yet. Add one using the left panel!</div>';
+        return;
+      }
+
+      animeList.innerHTML = '';
+      currentItems.forEach((item, index) => {
+        const id = item.id || item.anisora_id;
+        const poster = item.poster || item.banner || 'https://via.placeholder.com/44x60?text=No+Img';
+        const title = item.title || item.jname || 'Unknown Title';
+        const meta = [item.type, item.total_episodes ? `${item.total_episodes} eps` : null, item.score ? `★ ${item.score}` : null].filter(Boolean).join(' • ');
+
+        const row = document.createElement('div');
+        row.className = 'anime-item';
+        row.draggable = true;
+        row.dataset.id = id;
+        row.dataset.index = index;
+
+        row.innerHTML = `
+          <div class="item-rank">#${index + 1}</div>
+          <img src="${poster}" class="item-img" alt="">
+          <div class="item-info">
+            <div class="item-title" title="${title}">${title}</div>
+            <div class="item-meta">ID: ${id} | ${meta}</div>
+          </div>
+          <div class="item-actions">
+            <button class="btn order-btn" onclick="moveItem(${index}, -1)" title="Move Up">↑</button>
+            <button class="btn order-btn" onclick="moveItem(${index}, 1)" title="Move Down">↓</button>
+            <button class="btn delete-btn" onclick="deleteItem('${id}')" title="Delete">✕</button>
+          </div>
+        `;
+
+        setupDragAndDrop(row);
+        animeList.appendChild(row);
+      });
+    }
+
+    // Drag and drop ordering
+    let draggedItem = null;
+
+    function setupDragAndDrop(el) {
+      el.addEventListener('dragstart', (e) => {
+        draggedItem = el;
+        el.classList.add('dragging');
+      });
+
+      el.addEventListener('dragend', () => {
+        el.classList.remove('dragging');
+        draggedItem = null;
+      });
+
+      el.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(animeList, e.clientY);
+        if (afterElement == null) {
+          animeList.appendChild(draggedItem);
+        } else {
+          animeList.insertBefore(draggedItem, afterElement);
+        }
+      });
+    }
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.anime-item:not(.dragging)')];
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function moveItem(index, direction) {
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= currentItems.length) return;
+      const temp = currentItems[index];
+      currentItems[index] = currentItems[newIndex];
+      currentItems[newIndex] = temp;
+      renderList();
+      saveOrdering(false);
+    }
+
+    async function deleteItem(id) {
+      if (!confirm(`Are you sure you want to remove anime ${id} from this section?`)) return;
+
+      const section = sectionSelect.value;
+      try {
+        const res = await fetch(`/api/v1/admin/section/${section}/${id}`, {
+          method: 'DELETE',
+          headers: getHeaders(false)
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentItems = data.items;
+          renderList();
+          showToast('Anime removed from section');
+        } else {
+          alert(data.error || 'Failed to remove');
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function saveOrdering(showNotification = true) {
+      const section = sectionSelect.value;
+      // Extract current DOM sequence
+      const orderedIds = [...animeList.querySelectorAll('.anime-item')].map(el => el.dataset.id);
+
+      try {
+        const res = await fetch(`/api/v1/admin/section/${section}/reorder`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ ordered_ids: orderedIds })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentItems = data.items;
+          renderList();
+          if (showNotification) showToast('Order saved successfully!');
+        } else {
+          alert(data.error || 'Failed to save order');
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // Lookup Anime by ID
+    async function lookupAnime() {
+      const id = anisoraIdInput.value.trim();
+      if (!id) {
+        alert('Please enter an Anisora ID');
+        return;
+      }
+
+      lookupBtn.innerText = 'Searching...';
+      try {
+        const res = await fetch(`/api/v1/admin/lookup/${id}`);
+        const data = await res.json();
+        if (data.success && data.anime) {
+          lookedUpAnime = data.anime;
+          previewImg.src = lookedUpAnime.poster || lookedUpAnime.banner || 'https://via.placeholder.com/70x98?text=No+Img';
+          previewTitle.innerText = lookedUpAnime.title;
+          previewSub.innerText = `${lookedUpAnime.type} • ${lookedUpAnime.total_episodes || 0} episodes • Score: ${lookedUpAnime.score || 'N/A'}`;
+          previewTags.innerHTML = (lookedUpAnime.tags || []).slice(0, 4).map(t => `<span class="tag-pill">${t}</span>`).join('');
+          previewCard.classList.add('active');
+        } else {
+          previewCard.classList.remove('active');
+          alert(data.error || 'Anime not found in DB');
+        }
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        lookupBtn.innerText = 'Lookup';
+      }
+    }
+
+    // Add looked up anime to section
+    async function addLookedUpAnime() {
+      if (!lookedUpAnime) return;
+      const section = sectionSelect.value;
+      const position = positionSelect.value === '-1' ? currentItems.length : 0;
+
+      addConfirmBtn.innerText = 'Adding...';
+      try {
+        const res = await fetch(`/api/v1/admin/section/${section}/add`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            anisora_id: lookedUpAnime.id,
+            position: position
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentItems = data.items;
+          renderList();
+          previewCard.classList.remove('active');
+          anisoraIdInput.value = '';
+          lookedUpAnime = null;
+          showToast(`Added to ${section}!`);
+        } else {
+          alert(data.error || 'Failed to add anime');
+        }
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        addConfirmBtn.innerText = '+ Add to Section';
+      }
+    }
+
+    // Event listeners
+    sectionSelect.addEventListener('change', () => loadSection(sectionSelect.value));
+    lookupBtn.addEventListener('click', lookupAnime);
+    anisoraIdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') lookupAnime();
+    });
+    addConfirmBtn.addEventListener('click', addLookedUpAnime);
+    saveOrderBtn.addEventListener('click', () => saveOrdering(true));
+
+    // Initialize
+    loadSection(sectionSelect.value);
+  </script>
+</body>
+</html>
+

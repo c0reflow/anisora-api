@@ -11,12 +11,13 @@ import { HomeAdminService } from './services/home-admin.service';
 import { config } from './config/env';
 
 export async function buildApp(): Promise<FastifyInstance> {
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
   const app = Fastify({
-    logger: {
-      level: config.isProduction ? 'info' : 'debug',
-      transport: config.isProduction
-        ? undefined
-        : {
+    logger: isServerless || config.isProduction
+      ? true
+      : {
+          transport: {
             target: 'pino-pretty',
             options: {
               colorize: true,
@@ -24,7 +25,7 @@ export async function buildApp(): Promise<FastifyInstance> {
               ignore: 'pid,hostname',
             },
           },
-    },
+        },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
   // Enable CORS

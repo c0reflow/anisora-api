@@ -382,6 +382,347 @@ Comments are mapped by `episode_id` formatted as `animeid&ep=(int)` (e.g., `1999
 | `GET` | `/api/v1/meta/producers` | List production companies sorted by frequency |
 | `GET` | `/api/v1/meta/stats` | Aggregated breakdown by format, status, and season |
 
+### 9. Video Streaming & Player Embeds (`/stream/miruro`)
+
+Real-time streaming (HLS `.m3u8` playlists and direct `.mp4` URLs), iframe embed links, VTT subtitle tracks, and thumbnail storyboard sprites powered by Miruro.
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/stream/miruro/servers` | List streaming servers with clean short names (`type = sub` first, then `type = dub`) |
+| `GET` | `/api/v1/stream/miruro/servers` | API v1 alias for Miruro server list |
+| `GET` | `/stream/miruro` | Real-time video streaming (HLS/MP4), iframe embed, subtitles, and player options |
+| `GET` | `/api/v1/stream/miruro` | API v1 alias for video streaming and embeds |
+| `GET` | `/stream/universal/servers` | Universal server list combining Miruro (`kiwix`), VidNest (pahe + trio), and ZokoAnime |
+| `GET` | `/stream/universal` | Universal streaming and embed endpoint cross-resolving IDs across providers |
+| `GET` | `/api/v1/stream/universal` | API v1 alias for universal streaming |
+| `GET` | `/stream/universal/getStream` | Proxied universal stream (Aetherr `stream_url` & Upcloud subtitles) |
+| `GET` | `/api/v1/stream/universal/getStream` | API v1 alias for proxied universal streaming |
+
+---
+
+#### 1. Miruro Server List Endpoint (`GET /stream/miruro/servers`)
+
+Fetches all available streaming servers for an anime episode, returning each server's clean short `name` and `id` (`animepahe` renamed to `kiwix`, hashed cloudflare to `cloud-2`, `vault-6-direct-2` to `vault-6`, etc.). Results are organized with `type = sub` servers first, followed by `type = dub`, and any others:
+
+##### Query Parameters:
+| Parameter | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `string` | **Yes** | Miruro identifier, watch URL, or ID with episode query | `ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz?ep=1`<br>`https://miruro.to/watch/ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz/one-piece?ep=2` |
+| `ep` / `episode`| `integer`| No | Episode number (optional, overrides ep from id) | `1` |
+
+##### Request Example:
+```bash
+curl "http://localhost:5500/stream/miruro/servers?id=ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz?ep=1"
+```
+
+##### Example Response:
+```json
+{
+  "id": "ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz",
+  "episode": 1,
+  "title": "I'm Luffy! The Man Who's Gonna Be King of the Pirates!",
+  "sub": [
+    { "id": "kiwix", "name": "kiwix", "type": "sub" },
+    { "id": "vidplay", "name": "vidplay", "type": "sub" },
+    { "id": "datsav", "name": "datsav", "type": "sub" },
+    { "id": "icarus-2", "name": "icarus-2", "type": "sub" },
+    { "id": "cloud-2", "name": "cloud-2", "type": "sub" },
+    { "id": "vault-6", "name": "vault-6", "type": "sub" },
+    { "id": "vault-7", "name": "vault-7", "type": "sub" },
+    { "id": "vidstream-1", "name": "vidstream-1", "type": "sub" },
+    { "id": "hd-1", "name": "hd-1", "type": "sub" },
+    { "id": "cat", "name": "cat", "type": "sub" },
+    { "id": "mycloud", "name": "mycloud", "type": "sub" },
+    { "id": "vidstream-2", "name": "vidstream-2", "type": "sub" }
+  ],
+  "dub": [
+    { "id": "icarus-1", "name": "icarus-1", "type": "dub" },
+    { "id": "cloud-1", "name": "cloud-1", "type": "dub" },
+    { "id": "vault-6", "name": "vault-6", "type": "dub" },
+    { "id": "vault-7", "name": "vault-7", "type": "dub" },
+    { "id": "vidstream-1", "name": "vidstream-1", "type": "dub" },
+    { "id": "hd-1", "name": "hd-1", "type": "dub" },
+    { "id": "vidplay", "name": "vidplay", "type": "dub" },
+    { "id": "vidstream-2", "name": "vidstream-2", "type": "dub" }
+  ],
+  "raw": [],
+  "servers": [
+    { "id": "kiwix", "name": "kiwix", "type": "sub" },
+    { "id": "vidplay", "name": "vidplay", "type": "sub" },
+    { "id": "datsav", "name": "datsav", "type": "sub" },
+    { "id": "icarus-2", "name": "icarus-2", "type": "sub" },
+    { "id": "cloud-2", "name": "cloud-2", "type": "sub" },
+    { "id": "vault-6", "name": "vault-6", "type": "sub" },
+    { "id": "vault-7", "name": "vault-7", "type": "sub" },
+    { "id": "vidstream-1", "name": "vidstream-1", "type": "sub" },
+    { "id": "hd-1", "name": "hd-1", "type": "sub" },
+    { "id": "cat", "name": "cat", "type": "sub" },
+    { "id": "mycloud", "name": "mycloud", "type": "sub" },
+    { "id": "vidstream-2", "name": "vidstream-2", "type": "sub" },
+    { "id": "icarus-1", "name": "icarus-1", "type": "dub" },
+    { "id": "cloud-1", "name": "cloud-1", "type": "dub" },
+    { "id": "vault-6", "name": "vault-6", "type": "dub" },
+    { "id": "vault-7", "name": "vault-7", "type": "dub" },
+    { "id": "vidstream-1", "name": "vidstream-1", "type": "dub" },
+    { "id": "hd-1", "name": "hd-1", "type": "dub" },
+    { "id": "vidplay", "name": "vidplay", "type": "dub" },
+    { "id": "vidstream-2", "name": "vidstream-2", "type": "dub" }
+  ]
+}
+```
+
+---
+
+#### 2. Streaming & Embeds Endpoint (`GET /stream/miruro`)
+
+##### Query Parameters:
+| Parameter | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `string` | **Yes** | Miruro identifier, watch URL, or ID with episode query | `ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz?ep=1`<br>`https://miruro.to/watch/ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz/one-piece?ep=2` |
+| `server` | `string` | No | Dedicated server name or slug. When provided, returns dedicated subtitles, thumbnail, streaming, and embed URL for that server | `kiwix`, `vidstream-1`, `hd-1`, `vidplay`, `datsav`, `cloud-2`, `vault-6` |
+| `type` | `string` | No | Audio track: `sub` (default) or `dub` | `sub`, `dub` |
+| `ep` / `episode`| `integer`| No | Episode number (optional, overrides ep from id) | `2` |
+
+#### General Request (Without `server` parameter):
+Returns primary streaming source, embed player URL, subtitles, thumbnails, skipTimes, and all available server options:
+```bash
+curl "http://localhost:5500/stream/miruro?id=ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz?ep=1"
+```
+
+#### Dedicated Server Request (With `server={serverId}`):
+Returns subtitles, thumbnail, streaming links, and embed player URL specifically for that server:
+```bash
+curl "http://localhost:5500/stream/miruro?id=ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz?ep=2&server=kiwix&type=sub"
+```
+
+---
+
+### 10. Universal Streaming & Cross-Provider Servers (`/stream/universal`)
+
+The universal streaming engine resolves anime across multiple streaming backends and catalogs:
+- **Miruro**: Direct HLS streaming (`.m3u8`), subtitles, storyboards, skip times, and servers (`kiwix`, `vidstream-1`, `cloud-2`, `vault-6`, `hd-1`, etc.).
+- **VidNest AnimePahe**: `https://vidnest.fun/animepahe/{anilistId}/{episode}/{type}` (`vidnest-pahe`).
+- **VidNest Trio**: `https://vidnest.fun/anime/{anilistId}/{episode}/{type}?server={aniwave|megaplay|anitaku}` (`aniwave`, `megaplay`, `anitaku`).
+- **ZokoAnime**: `https://zokoanime.video/stream/ani/{anilistId}/{episode}/{type}?color=35d5bf` (`zokoanime`).
+
+Cross-resolves anime IDs seamlessly across **MAL**, **AniList**, **HiAnime**, **Miruro**, and **AniSora** using the local database!
+
+#### 1. Universal Server List (`GET /stream/universal/servers`)
+
+##### Query Parameters:
+| Parameter | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `string` | **Yes** | Anime identifier (AniList ID, MAL ID, AniSora ID, HiAnime slug, or Miruro ID/URL) | `21`, `16498`, `ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz?ep=1` |
+| `provider` | `string` | No | Identifier source: `anilist`, `mal`, `hianime`, `miruro`, `anisora` (auto-detected if omitted) | `anilist` |
+| `ep` / `episode`| `integer`| No | Episode number (default: `1`) | `1` |
+
+##### Request Example:
+```bash
+curl "http://localhost:5500/stream/universal/servers?provider=anilist&id=21&ep=1"
+```
+
+##### Example Response:
+```json
+{
+  "id": "21",
+  "anilistId": "21",
+  "malId": "21",
+  "miruroId": "ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz",
+  "title": "One Piece",
+  "episode": 1,
+  "sub": [
+    { "id": "kiwix", "name": "kiwix", "type": "sub", "source": "miruro" },
+    { "id": "vidplay", "name": "vidplay", "type": "sub", "source": "miruro" },
+    { "id": "datsav", "name": "datsav", "type": "sub", "source": "miruro" },
+    { "id": "icarus-2", "name": "icarus-2", "type": "sub", "source": "miruro" },
+    { "id": "cloud-2", "name": "cloud-2", "type": "sub", "source": "miruro" },
+    { "id": "vault-6", "name": "vault-6", "type": "sub", "source": "miruro" },
+    { "id": "vault-7", "name": "vault-7", "type": "sub", "source": "miruro" },
+    { "id": "vidstream-1", "name": "vidstream-1", "type": "sub", "source": "miruro" },
+    { "id": "hd-1", "name": "hd-1", "type": "sub", "source": "miruro" },
+    { "id": "cat", "name": "cat", "type": "sub", "source": "miruro" },
+    { "id": "mycloud", "name": "mycloud", "type": "sub", "source": "miruro" },
+    { "id": "vidstream-2", "name": "vidstream-2", "type": "sub", "source": "miruro" },
+    { "id": "vidnest-pahe", "name": "vidnest-pahe", "type": "sub", "source": "vidnest", "embed": "https://vidnest.fun/animepahe/21/1/sub" },
+    { "id": "aniwave", "name": "aniwave", "type": "sub", "source": "vidnest", "embed": "https://vidnest.fun/anime/21/1/sub?server=aniwave" },
+    { "id": "megaplay", "name": "megaplay", "type": "sub", "source": "vidnest", "embed": "https://vidnest.fun/anime/21/1/sub?server=megaplay" },
+    { "id": "anitaku", "name": "anitaku", "type": "sub", "source": "vidnest", "embed": "https://vidnest.fun/anime/21/1/sub?server=anitaku" },
+    { "id": "zokoanime", "name": "zokoanime", "type": "sub", "source": "zokoanime", "embed": "https://zokoanime.video/stream/ani/21/1/sub?color=35d5bf" }
+  ],
+  "dub": [
+    { "id": "icarus-1", "name": "icarus-1", "type": "dub", "source": "miruro" },
+    { "id": "cloud-1", "name": "cloud-1", "type": "dub", "source": "miruro" },
+    { "id": "vault-6", "name": "vault-6", "type": "dub", "source": "miruro" },
+    { "id": "vault-7", "name": "vault-7", "type": "dub", "source": "miruro" },
+    { "id": "vidstream-1", "name": "vidstream-1", "type": "dub", "source": "miruro" },
+    { "id": "hd-1", "name": "hd-1", "type": "dub", "source": "miruro" },
+    { "id": "vidplay", "name": "vidplay", "type": "dub", "source": "miruro" },
+    { "id": "vidstream-2", "name": "vidstream-2", "type": "dub", "source": "miruro" },
+    { "id": "vidnest-pahe", "name": "vidnest-pahe", "type": "dub", "source": "vidnest", "embed": "https://vidnest.fun/animepahe/21/1/dub" },
+    { "id": "aniwave", "name": "aniwave", "type": "dub", "source": "vidnest", "embed": "https://vidnest.fun/anime/21/1/dub?server=aniwave" },
+    { "id": "megaplay", "name": "megaplay", "type": "dub", "source": "vidnest", "embed": "https://vidnest.fun/anime/21/1/dub?server=megaplay" },
+    { "id": "anitaku", "name": "anitaku", "type": "dub", "source": "vidnest", "embed": "https://vidnest.fun/anime/21/1/dub?server=anitaku" },
+    { "id": "zokoanime", "name": "zokoanime", "type": "dub", "source": "zokoanime", "embed": "https://zokoanime.video/stream/ani/21/1/dub?color=35d5bf" }
+  ],
+  "servers": [
+    /* All type=sub servers first, followed by all type=dub servers */
+  ]
+}
+```
+
+---
+
+#### 2. Universal Stream & Embed Endpoint (`GET /stream/universal`)
+
+##### Query Parameters:
+| Parameter | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `string` | **Yes** | Anime identifier (AniList ID, MAL ID, AniSora ID, HiAnime slug, or Miruro ID/URL) | `21`, `16498` |
+| `provider` | `string` | No | Provider catalog: `anilist`, `mal`, `hianime`, `miruro`, `anisora` | `anilist` |
+| `server` | `string` | No | Dedicated server name: `kiwix`, `zokoanime`, `vidnest-pahe`, `aniwave`, `megaplay`, `anitaku`, `vidstream-1`, `cloud-2`, etc. | `zokoanime` |
+| `type` | `string` | No | Audio track: `sub` (default) or `dub` | `sub` |
+| `ep` / `episode`| `integer`| No | Episode number (default: `1`) | `1` |
+
+##### Request Examples:
+
+**1. Fetch ZokoAnime Embed Player:**
+```bash
+curl "http://localhost:5500/stream/universal?provider=anilist&id=21&ep=1&server=zokoanime"
+```
+
+**2. Fetch VidNest Aniwave Embed Player:**
+```bash
+curl "http://localhost:5500/stream/universal?provider=anilist&id=21&ep=1&server=aniwave"
+```
+
+**3. Fetch VidNest AnimePahe Embed Player:**
+```bash
+curl "http://localhost:5500/stream/universal?provider=anilist&id=21&ep=1&server=vidnest-pahe"
+```
+
+**4. Fetch Kiwix (AnimePahe via Miruro) Direct HLS Streams:**
+```bash
+curl "http://localhost:5500/stream/universal?provider=anilist&id=21&ep=1&server=kiwix"
+```
+
+**5. General Request with Default Streams and All Server Choices:**
+```bash
+curl "http://localhost:5500/stream/universal?provider=anilist&id=21&ep=1"
+```
+
+---
+
+#### 3. Proxied Universal Stream Endpoint (`GET /stream/universal/getStream`)
+
+Proxies direct video streams and subtitle tracks through our dedicated high-performance local proxy server (`/proxy`):
+- **Streaming Proxy (Localhost HLS Proxy)**: Formats upstream HLS `.m3u8` streams via `http://localhost:5050/proxy?url=...&auto=0&headers=...`. The local proxy server dynamically rewrites all playlist and segment lines so that the browser never encounters 403 Forbidden or CORS issues.
+- **Subtitle & Asset Proxy**: Subtitle tracks (`.vtt`) and thumbnail sprites are also routed through the local proxy, eliminating external third-party proxy downtime and rate limits.
+- **Automatic 403 & Fallback Recovery**: If an upstream server (such as Kiwix/AnimePahe via `uwucdn.top`) rejects requests with a 403 Forbidden Cloudflare challenge, the service automatically falls back to healthy direct streams (`zokoanime`, `vidstream-1`, `icarus-2`, `cloud-2`, `hd-1`, `cat`, `mycloud`) ensuring uninterrupted playback.
+
+##### Running the Local Proxy:
+```bash
+# Start standalone proxy on port 5050
+npm run proxy
+# or
+node proxy/server.js
+```
+
+##### Query Parameters:
+| Parameter | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | `string` | **Yes** | Anime identifier (AniList ID, MAL ID, AniSora ID, HiAnime slug, or Miruro ID/URL) | `21`, `16498` |
+| `provider` | `string` | No | Provider catalog: `anilist`, `mal`, `hianime`, `miruro`, `anisora` | `anilist` |
+| `server` | `string` | No | Dedicated server name: `zokoanime`, `vidstream-1`, `cloud-2`, `hd-1`, `cat`, `mycloud`, `kiwix` | `zokoanime` |
+| `type` | `string` | No | Audio track: `sub` (default) or `dub` | `sub` |
+| `ep` / `episode`| `integer`| No | Episode number (default: `1`) | `1` |
+
+##### Request Examples:
+
+**1. Fetch Proxied Stream with ZokoAnime:**
+```bash
+curl "http://localhost:5500/stream/universal/getStream?provider=anilist&id=21&ep=1&server=zokoanime"
+```
+
+**2. Fetch Proxied Stream with Default Universal Server:**
+```bash
+curl "http://localhost:5500/stream/universal/getStream?provider=anilist&id=21&ep=1"
+```
+
+##### Sample Response:
+```json
+{
+  "id": "21",
+  "anilistId": "21",
+  "miruroId": "ZkbbIfGqvoOrvvss5iQuAlVkW4AaYPxz",
+  "title": "One Piece",
+  "episode": 1,
+  "type": "sub",
+  "server": "zokoanime",
+  "serverId": "zokoanime",
+  "provider": "zokoanime",
+  "stream_url": "http://localhost:5050/proxy?url=https%3A%2F%2Fhls.dramahot.top%2Fp%2Fscxqicy%2Fta9t4m1bhw%2Fcm72fkvbpx%2F09qmw7k6mi5nzd%2Fmaster.m3u8&auto=0&headers=%7B%22Referer%22%3A%22https%3A%2F%2Fzokoanime.video%22%2C%22Origin%22%3A%22https%3A%2F%2Fzokoanime.video%22%2C%22User-Agent%22%3A%22Mozilla%2F5.0...%22%7D",
+  "target_url": "https://hls.dramahot.top/p/scxqicy/ta9t4m1bhw/cm72fkvbpx/09qmw7k6mi5nzd/master.m3u8",
+  "stream_path": null,
+  "expiry_date": null,
+  "streaming": [
+    {
+      "url": "http://localhost:5050/proxy?url=https%3A%2F%2Fhls.dramahot.top%2Fp%2Fscxqicy%2Fta9t4m1bhw%2Fcm72fkvbpx%2F09qmw7k6mi5nzd%2Fmaster.m3u8&auto=0&headers=%7B%22Referer%22%3A%22https%3A%2F%2Fzokoanime.video%22%2C%22Origin%22%3A%22https%3A%2F%2Fzokoanime.video%22%2C%22User-Agent%22%3A%22Mozilla%2F5.0...%22%7D",
+      "stream_url": "http://localhost:5050/proxy?url=https%3A%2F%2Fhls.dramahot.top%2Fp%2Fscxqicy%2Fta9t4m1bhw%2Fcm72fkvbpx%2F09qmw7k6mi5nzd%2Fmaster.m3u8&auto=0&headers=%7B%22Referer%22%3A%22https%3A%2F%2Fzokoanime.video%22%2C%22Origin%22%3A%22https%3A%2F%2Fzokoanime.video%22%2C%22User-Agent%22%3A%22Mozilla%2F5.0...%22%7D",
+      "original_url": "https://hls.dramahot.top/p/scxqicy/ta9t4m1bhw/cm72fkvbpx/09qmw7k6mi5nzd/master.m3u8",
+      "format": "hls",
+      "quality": "auto",
+      "embed": null
+    }
+  ],
+  "embed": "https://zokoanime.video/stream/ani/21/1/sub?color=35d5bf",
+  "subtitles": [
+    {
+      "language": "en",
+      "label": "English",
+      "file": "http://localhost:5050/proxy?url=https%3A%2F%2Fhls.dramahot.top%2Fv%2Fscxqicy%2Fta9t4m1bhw%2Fcm72fkvbpx%2F09qmw7k6mi5nzd%2Fsubs%2F6e4a0p3k8ehe9eee.vtt&headers=%7B%22User-Agent%22%3A%22Mozilla%2F5.0...%22%2C%22Referer%22%3A%22https%3A%2F%2Fzokoanime.video%22%7D",
+      "original_file": "https://hls.dramahot.top/v/scxqicy/ta9t4m1bhw/cm72fkvbpx/09qmw7k6mi5nzd/subs/6e4a0p3k8ehe9eee.vtt",
+      "format": "vtt",
+      "default": true
+    }
+  ],
+  "thumbnail": null,
+  "headers": {
+    "Referer": "https://zokoanime.video",
+    "Origin": "https://zokoanime.video",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+  },
+  "skipTimes": [
+    { "kind": "intro", "start": 31, "end": 111 },
+    { "kind": "outro", "start": 1376, "end": 1447 }
+  ],
+  "defaultServer": "zokoanime"
+}
+```
+
+---
+
+#### 4. Video.js Studio Player UI (`/player` or `/player.html`)
+
+A standalone web player featuring the **VidHawk Custom Skin** integrated with Video.js and Hls.js:
+
+- **Input Control Dashboard**:
+  - **Video / HLS Stream URL**: Accepts `.m3u8` playlists (e.g. from `/stream/universal/getStream`) or direct `.mp4` video files.
+  - **Subtitle URL**: WebVTT / SRT subtitle files.
+  - **Thumbnail Preview VTT**: WebVTT sprite sheet for frame-accurate seekbar hover thumbnails.
+  - **Title & Episode**: Configures player header displays.
+  - **Intro / Outro Timers**: Displays yellow intro/outro segments on the seekbar and shows glowing **SKIP INTRO** / **SKIP OUTRO** buttons during playback.
+  - **⚡ Quick AniSora API Fetcher**: Enter anime ID (e.g. `21`), episode number, and server name to automatically fetch, configure, and play directly via `/stream/universal/getStream`.
+  - **Instant Presets**: One-click sample streams (One Piece Ep 1, ZokoAnime Dramahot HLS, Sintel Open Movie, Big Buck Bunny).
+- **Player Skin Highlights**:
+  - Top-left floating "NOW PLAYING" and anime title.
+  - Top-right Cloud Server switcher menu (HiAnime, Miruro, VidNest).
+  - YouTube-style double-click seek ripples (◀◀◀ / ▶▶▶ &plusmn;10s).
+  - Seekbar with yellow intro/outro ranges, buffer indicators, and hover thumbnail canvas preview.
+  - Bottom controls with capsule pills: Play/Pause, collapsible horizontal volume slider, formatted time, Cast, CC toggle (distinct ON/OFF SVGs in white), PiP, and Fullscreen.
+  - Settings popover: Quality (1080p, 720p, 480p, Auto), Playback speed, Captions with visual customizer (font size, color, background, edge style), Player toggles (Auto-skip intro/outro, video fit), and download options.
+  - Right-click Context Menu: Loop toggle, Copy URL, Copy URL @ timestamp, and **Stats for Nerds** overlay with live buffer health gauge.
+  - Keyboard Hotkeys: Space/K, M, F, Arrow keys.
+
 ---
 
 ## 🏷️ Title Localization & Default Names
@@ -417,3 +758,5 @@ This project implements a clean polyfill layer in [`src/db/prisma.ts`](file:///a
 - `Prisma.Decimal.prototype.toJSON = function() { return Number(this.toString()); }`
 - External IDs and AniSora IDs are presented as strings to eliminate any precision loss in JavaScript clients.
 
+#   a n i s o r a - a p i  
+ 

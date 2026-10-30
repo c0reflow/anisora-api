@@ -1,5 +1,44 @@
 import { prisma } from '../db/prisma';
 
+// ---------------------------------------------------------------------------
+// In-memory TTL cache
+// ---------------------------------------------------------------------------
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+class TtlCache<T> {
+  private store = new Map<string, CacheEntry<T>>();
+
+  get(key: string): T | null {
+    const entry = this.store.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.store.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  set(key: string, data: T, ttlMs: number) {
+    this.store.set(key, { data, expiresAt: Date.now() + ttlMs });
+  }
+
+  delete(key: string) {
+    this.store.delete(key);
+  }
+}
+
+// Cache anime details for 1 hour, episode lists for 30 min
+const animeDetailsCache = new TtlCache<any>();
+const episodeCache = new TtlCache<any>();
+const anilistIdCache = new TtlCache<number | null>();
+
+const ANIME_TTL = 60 * 60 * 1000;     // 1 hour
+const EPISODE_TTL = 30 * 60 * 1000;   // 30 minutes
+const ID_TTL = 6 * 60 * 60 * 1000;    // 6 hours
+
 export class AnilistService {
   private static readonly GRAPHQL_ENDPOINT = 'https://graphql.anilist.co';
 
@@ -27,32 +66,47 @@ export class AnilistService {
   }
 
   /**
-   * Resolves anilist_id from anisora_id
+   * Resolves anilist_id from anisora_id.
+   * Result is cached in-memory for 6 hours to avoid repeated DB round-trips.
    */
   static async getAnilistId(anisoraIdInput: string | number | bigint): Promise<number | null> {
+    const cacheKey = `id:${anisoraIdInput}`;
+    const cached = anilistIdCache.get(cacheKey);
+    if (cached !== null) return cached;
+
     const idBig = BigInt(anisoraIdInput);
     const row = await prisma.anime.findUnique({
       where: { anisora_id: idBig },
       select: { anilist_id: true, title: true, default_name: { select: { name: true } } },
     });
 
-    if (!row) return null;
-    if (row.anilist_id) return Number(row.anilist_id);
+    if (!row) {
+      anilistIdCache.set(cacheKey, null, ID_TTL);
+      return null;
+    }
+
+    if (row.anilist_id) {
+      const id = Number(row.anilist_id);
+      anilistIdCache.set(cacheKey, id, ID_TTL);
+      return id;
+    }
 
     // If anilist_id is not mapped in DB, search by title on AniList
     const titleToSearch = row.default_name?.name || row.title;
     if (titleToSearch) {
       const searchData = await this.searchAnimeByTitle(titleToSearch);
       if (searchData && searchData.id) {
-        // Cache it in background
-        await prisma.anime.update({
+        // Persist to DB in background so future requests skip this search
+        prisma.anime.update({
           where: { anisora_id: idBig },
           data: { anilist_id: BigInt(searchData.id) },
         }).catch(() => {});
+        anilistIdCache.set(cacheKey, searchData.id, ID_TTL);
         return searchData.id;
       }
     }
 
+    anilistIdCache.set(cacheKey, null, ID_TTL);
     return null;
   }
 
@@ -69,9 +123,14 @@ export class AnilistService {
   }
 
   /**
-   * Fetches complete media details from AniList by Anisora ID
+   * Fetches complete media details from AniList by Anisora ID.
+   * Results are cached in-memory for 1 hour.
    */
   static async getAnimeDetails(anisoraId: string | number | bigint) {
+    const cacheKey = `details:${anisoraId}`;
+    const cached = animeDetailsCache.get(cacheKey);
+    if (cached) return cached;
+
     const anilistId = await this.getAnilistId(anisoraId);
     if (!anilistId) {
       throw new Error(`No AniList entry found for Anisora ID ${anisoraId}`);
@@ -232,17 +291,25 @@ export class AnilistService {
     `;
 
     const data = await this.executeQuery(query, { id: anilistId });
-    return {
+    const result = {
       anisora_id: anisoraId.toString(),
       anilist_id: anilistId,
       media: data?.Media || null,
     };
+
+    animeDetailsCache.set(cacheKey, result, ANIME_TTL);
+    return result;
   }
 
   /**
-   * Fetches all episodes of that anime including title, thumbnail, number
+   * Fetches all episodes of that anime including title, thumbnail, number.
+   * Results are cached in-memory for 30 minutes.
    */
   static async getEpisodes(anisoraId: string | number | bigint) {
+    const cacheKey = `episodes:${anisoraId}`;
+    const cached = episodeCache.get(cacheKey);
+    if (cached) return cached;
+
     const anilistId = await this.getAnilistId(anisoraId);
     if (!anilistId) {
       throw new Error(`No AniList entry found for Anisora ID ${anisoraId}`);
@@ -292,13 +359,15 @@ export class AnilistService {
       };
     });
 
-    return {
+    const result = {
       anisora_id: anisoraId.toString(),
       anilist_id: anilistId,
       total_episodes: media?.episodes || formattedEpisodes.length,
       count: formattedEpisodes.length,
       episodes: formattedEpisodes,
     };
+
+    episodeCache.set(cacheKey, result, EPISODE_TTL);
+    return result;
   }
 }
-
